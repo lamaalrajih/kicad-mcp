@@ -1,5 +1,7 @@
 # KiCad MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@lamaalrajih/kicad-mcp)](https://smithery.ai/server/@lamaalrajih/kicad-mcp)
+
 This guide will help you set up a Model Context Protocol (MCP) server for KiCad. While the examples in this guide often reference Claude Desktop, the server is compatible with **any MCP-compliant client**. You can use it with Claude Desktop, your own custom MCP clients, or any other application that implements the Model Context Protocol.
 
 ## Table of Contents
@@ -25,6 +27,14 @@ This guide will help you set up a Model Context Protocol (MCP) server for KiCad.
 - Claude Desktop (or another MCP client)
 
 ## Installation Steps
+
+### Installing via Smithery
+
+To install KiCad MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@lamaalrajih/kicad-mcp):
+
+```bash
+npx @smithery/cli -y install @lamaalrajih/kicad-mcp --client claude
+```
 
 ### 1. Set Up Your Python Environment
 
