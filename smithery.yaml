@@ -1,0 +1,26 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    properties:
+      kicadSearchPaths:
+        type: string
+        description: Comma-separated list of directories to search for KiCad projects
+          (maps to KICAD_SEARCH_PATHS)
+      kicadUserDir:
+        type: string
+        description: Override the default KiCad user directory (maps to KICAD_USER_DIR)
+      kicadAppPath:
+        type: string
+        description: Override the default KiCad application path (maps to KICAD_APP_PATH)
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'python', args: ['main.py'], env: { ...(config.kicadSearchPaths ? { KICAD_SEARCH_PATHS: config.kicadSearchPaths } : {}), ...(config.kicadUserDir ? { KICAD_USER_DIR: config.kicadUserDir } : {}), ...(config.kicadAppPath ? { KICAD_APP_PATH: config.kicadAppPath } : {}) } })
+  exampleConfig:
+    kicadSearchPaths: ~/pcb,~/Electronics,~/Projects/KiCad
+    kicadUserDir: ~/Documents/KiCadProjects
+    kicadAppPath: /Applications/KiCad7/KiCad.app
