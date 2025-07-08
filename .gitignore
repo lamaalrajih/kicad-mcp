@@ -18,6 +18,11 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+*.egg
+*.whl
+
+# PyPI
+.pypirc
 
 # Unit test / coverage reports
 htmlcov/

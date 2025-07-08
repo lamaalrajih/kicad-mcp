@@ -1,0 +1,6 @@
+include README.md
+include LICENSE
+include requirements.txt
+include .env.example
+recursive-include kicad_mcp *.py
+recursive-include docs *.md

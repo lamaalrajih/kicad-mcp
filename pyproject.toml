@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kicad-mcp"
+version = "0.1.0"
+authors = [
+  { name="Lama Al Rajih", email="your-email@example.com" },
+]
+description = "Model Context Protocol server for KiCad on Mac, Windows, and Linux"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+]
+dependencies = [
+    "mcp[cli]",
+    "pandas",
+]
+keywords = ["kicad", "mcp", "model-context-protocol", "eda", "pcb"]
+
+[project.urls]
+"Homepage" = "https://github.com/lamaalrajih/kicad-mcp"
+"Bug Tracker" = "https://github.com/lamaalrajih/kicad-mcp/issues"
+"Documentation" = "https://github.com/lamaalrajih/kicad-mcp#readme"
+
+[project.scripts]
+kicad-mcp = "kicad_mcp.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["kicad_mcp*"]
+exclude = ["tests*", "docs*"]
