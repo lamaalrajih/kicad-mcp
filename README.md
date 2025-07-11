@@ -134,6 +134,33 @@ For more information on resources vs tools vs prompts, read the [MCP docs](https
 
 ## Feature Highlights
 
+### Supplier Lookup Tools (NEW)
+
+KiCad-MCP can now query real-time part availability from leading distributors.
+
+1. Set environment variables for your API keys (do **NOT** commit them!):
+
+```bash
+export DIGIKEY_API_KEY="…"
+export MOUSER_API_KEY="…"
+```
+
+2. Example usage (Python):
+
+```python
+from kicad_mcp.tools.supplier_tools import search_distributors
+
+async def demo():
+    res = await search_distributors("STM32F103C8T6", progress_callback=lambda *_: None)
+    if res["ok"]:
+        print(res["result"][0])  # first hit
+```
+
+3. Security notes:
+   * Keys are only read from env vars at runtime and never logged.
+   * Successful responses are cached on-disk under `~/.cache/kicad_mcp_supplier.json` for 24 h to reduce rate-limit pressure.
+
+
 The KiCad MCP Server provides several key features, each with detailed documentation:
 
 - **Project Management**: List, examine, and open KiCad projects
