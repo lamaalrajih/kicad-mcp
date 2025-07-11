@@ -134,27 +134,65 @@ For more information on resources vs tools vs prompts, read the [MCP docs](https
 
 ## Feature Highlights
 
-The KiCad MCP Server provides several key features, each with detailed documentation:
+### Supplier Lookup Tools
 
-- **Project Management**: List, examine, and open KiCad projects
+KiCad-MCP can query real-time part availability from leading distributors.
+
+1. Set environment variables for your API keys (do **NOT** commit them!):
+
+```bash
+export DIGIKEY_API_KEY="…"
+export MOUSER_API_KEY="…"
+```
+
+2. Example usage (Python):
+
+```python
+from kicad_mcp.tools.supplier_tools import search_distributors
+
+async def demo():
+    res = await search_distributors("STM32F103C8T6", progress_callback=lambda *_: None)
+    if res["ok"]:
+        print(res["result"][0])  # first hit
+```
+
+3. Security notes:
+   * Keys are only read from env vars at runtime and never logged.
+   * Successful responses are cached in `~/.cache/kicad_mcp_supplier.json` (default **24 h**).
+   * Change the cache duration by editing `_CACHE_TTL` near the top of `kicad_mcp/tools/supplier_tools.py` (value in seconds).
+
+#### API Rate Limits
+
+With the default 24 h cache you will stay comfortably below the free-tier quotas of both distributors.
+
+| Distributor | Typical daily quota | Docs |
+|-------------|--------------------|------|
+| Mouser | 1,000 searches / 24 h (can be raised on request) | <https://www.mouser.com/api-search/> |
+| Digi-Key | 1,000 searches / 24 h (higher tiers available) | <https://developer.digikey.com/> |
+
+## Other Major Features
+
+KiCad-MCP provides many additional capabilities out of the box:
+
+- **Project Management** – List, examine, and open KiCad projects
   - *Example:* "Show me all my recent KiCad projects" → Lists all projects sorted by modification date
   
-- **PCB Design Analysis**: Get insights about your PCB designs and schematics
+- **PCB Design Analysis** – Get insights about your PCB designs and schematics
   - *Example:* "Analyze the component density of my temperature sensor board" → Provides component spacing analysis
   
-- **Netlist Extraction**: Extract and analyze component connections from schematics
+- **Netlist Extraction** – Extract and analyze component connections from schematics
   - *Example:* "What components are connected to the MCU in my Arduino shield?" → Shows all connections to the microcontroller
   
-- **BOM Management**: Analyze and export Bills of Materials
+- **BOM Management** – Analyze and export Bills of Materials
   - *Example:* "Generate a BOM for my smart watch project" → Creates a detailed bill of materials
   
-  - **Design Rule Checking**: Run DRC checks using the KiCad CLI and track your progress over time
+  - **Design Rule Checking** – Run DRC checks using the KiCad CLI and track your progress over time
   - *Example:* "Run DRC on my power supply board and compare to last week" → Shows progress in fixing violations
 
-- **PCB Visualization**: Generate visual representations of your PCB layouts
+- **PCB Visualization** – Generate visual representations of your PCB layouts
   - *Example:* "Show me a thumbnail of my audio amplifier PCB" → Displays a visual render of the board
   
-- **Circuit Pattern Recognition**: Automatically identify common circuit patterns in your schematics
+- **Circuit Pattern Recognition** – Automatically identify common circuit patterns in your schematics
   - *Example:* "What power supply topologies am I using in my IoT device?" → Identifies buck, boost, or linear regulators
 
 For more examples and details on each feature, see the dedicated guides in the documentation. You can also ask the LLM what tools it has access to!

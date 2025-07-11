@@ -1,5 +1,6 @@
 mcp[cli]
 pandas
+aiohttp
 
 # Development/Testing
 pytest

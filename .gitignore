@@ -42,3 +42,4 @@ logs/
 
 # MCP specific
 ~/.kicad_mcp/drc_history/
+~/.cache/
