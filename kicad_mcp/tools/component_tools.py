@@ -1,4 +1,3 @@
-from __future__ import annotations
 """Component–Footprint lookup & validation tools for KiCad-MCP.
 
 All tools defined in this module follow the canonical *envelope* expected by the
@@ -30,13 +29,15 @@ Implementation choices & notes
 * *Error taxonomy*:  The tools raise only the error types requested by the
   specification – see :data:`_ERROR_TYPES`.
 """
-
+from __future__ import annotations
 from pathlib import Path
+
 import asyncio
 import fnmatch
 import os
 import re
 import time
+
 from typing import Callable, Dict, List, Tuple
 
 try:
