@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint and Format
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+
+    - name: Set up Python 3.12
+      run: |
+        uv python install 3.12
+        uv python pin 3.12
+
+    - name: Install dependencies
+      run: uv sync --group dev
+
+    - name: Lint with ruff
+      run: uv run ruff check kicad_mcp/ tests/
+
+    - name: Check formatting with ruff
+      run: uv run ruff format --check kicad_mcp/ tests/
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        exclude:
+          - os: macos-latest
+            python-version: "3.10"
+
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+
+    - name: Set up Python ${{ matrix.python-version }}
+      run: |
+        uv python install ${{ matrix.python-version }}
+        uv python pin ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: uv sync --group dev
+
+    - name: Run tests
+      run: uv run python -m pytest tests/ -v --cov=kicad_mcp --cov-report=xml --cov-fail-under=30
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  security:
+    runs-on: ubuntu-latest
+    name: Security Scan
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+
+    - name: Set up Python 3.12
+      run: |
+        uv python install 3.12
+        uv python pin 3.12
+
+    - name: Install dependencies
+      run: uv sync --group dev
+
+    - name: Run security scan
+      run: uv run bandit -r kicad_mcp/
+
+  build:
+    runs-on: ubuntu-latest
+    name: Build Package
+    needs: [lint, test]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+
+    - name: Set up Python 3.12
+      run: |
+        uv python install 3.12
+        uv python pin 3.12
+
+    - name: Build package
+      run: uv build
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
