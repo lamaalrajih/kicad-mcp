@@ -28,6 +28,7 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
+.pytest_cache/
 
 # Logs
 logs/
@@ -42,3 +43,25 @@ logs/
 
 # MCP specific
 ~/.kicad_mcp/drc_history/
+
+# UV and modern Python tooling
+uv.lock
+.uv-cache/
+.ruff_cache/
+
+# Pre-commit
+.pre-commit-config.yaml
+
+# KiCad backup files
+*-backups/
+fp-info-cache
+*.bak
+*.backup
+*.kicad_pcb-bak
+*.kicad_sch-bak
+*.kicad_pro-bak
+*.kicad_prl
+*.kicad_prl-bak
+*.kicad_sch.lck
+*.kicad_pcb.lck
+*.kicad_pro.lck
