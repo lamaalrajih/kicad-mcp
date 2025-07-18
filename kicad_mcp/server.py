@@ -5,8 +5,9 @@ import atexit
 import os
 import signal
 import logging
+import functools
 from typing import Callable
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 # Import resource handlers
 from kicad_mcp.resources.projects import register_project_resources
@@ -127,9 +128,11 @@ def create_server() -> FastMCP:
     # Always print this now, as we rely on CLI
     logging.info(f"KiCad Python module setup removed; relying on kicad-cli for external operations.")
 
+    # Build a lifespan callable with the kwarg baked in (FastMCP 2.x dropped lifespan_kwargs)
+    lifespan_factory = functools.partial(kicad_lifespan, kicad_modules_available=kicad_modules_available)
+
     # Initialize FastMCP server
-    # Pass the availability flag (always False now) to the lifespan context
-    mcp = FastMCP("KiCad", lifespan=kicad_lifespan, lifespan_kwargs={"kicad_modules_available": kicad_modules_available})
+    mcp = FastMCP("KiCad", lifespan=lifespan_factory)
     logging.info(f"Created FastMCP server instance with lifespan management")
     
     # Register resources
@@ -186,3 +189,43 @@ def create_server() -> FastMCP:
     
     logging.info(f"Server initialization complete")
     return mcp
+
+
+def setup_signal_handlers() -> None:
+    """Setup signal handlers for graceful shutdown."""
+    # Signal handlers are set up in register_signal_handlers
+    pass
+
+
+def cleanup_handler() -> None:
+    """Handle cleanup during shutdown."""
+    run_cleanup_handlers()
+
+
+def setup_logging() -> None:
+    """Configure logging for the server."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+
+
+def main() -> None:
+    """Start the KiCad MCP server (blocking)."""
+    setup_logging()
+    logging.info("Starting KiCad MCP server...")
+    
+    server = create_server()
+    
+    try:
+        server.run()  # FastMCP manages its own event loop
+    except KeyboardInterrupt:
+        logging.info("Server interrupted by user")
+    except Exception as e:
+        logging.error(f"Server error: {e}")
+    finally:
+        logging.info("Server shutdown complete")
+
+
+if __name__ == "__main__":
+    main()

@@ -9,7 +9,7 @@ import logging # Import logging module
 
 # Must import config BEFORE env potentially overrides it via os.environ
 from kicad_mcp.config import KICAD_USER_DIR, ADDITIONAL_SEARCH_PATHS
-from kicad_mcp.server import create_server
+from kicad_mcp.server import main as server_main
 from kicad_mcp.utils.env import load_dotenv
 
 # --- Setup Logging --- 
@@ -70,10 +70,10 @@ if __name__ == "__main__":
         else:
             logging.info(f"No additional search paths configured") # Changed print to logging
 
-        # Create and run server
-        server = create_server()
+        # Run server
         logging.info(f"Running server with stdio transport") # Changed print to logging
-        server.run(transport='stdio')
+        import asyncio
+        asyncio.run(server_main())
     except Exception as e:
         logging.exception(f"Unhandled exception in main") # Log exception details
         raise
