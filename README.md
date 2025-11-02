@@ -2,6 +2,10 @@
 
 This guide will help you set up a Model Context Protocol (MCP) server for KiCad. While the examples in this guide often reference Claude Desktop, the server is compatible with **any MCP-compliant client**. You can use it with Claude Desktop, your own custom MCP clients, or any other application that implements the Model Context Protocol.
 
+<a href="https://glama.ai/mcp/servers/@lamaalrajih/kicad-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@lamaalrajih/kicad-mcp/badge" alt="KiCad Server MCP server" />
+</a>
+
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
