@@ -7,7 +7,8 @@ import subprocess
 import shutil
 import asyncio
 from typing import Dict, Any, Optional
-from mcp.server.fastmcp import FastMCP, Context, Image
+from fastmcp import FastMCP, Context
+from fastmcp.utilities.types import Image
 
 from kicad_mcp.utils.file_utils import get_project_files
 from kicad_mcp.config import KICAD_APP_PATH, system
@@ -20,7 +21,7 @@ def register_export_tools(mcp: FastMCP) -> None:
     """
     
     @mcp.tool()
-    async def generate_pcb_thumbnail(project_path: str, ctx: Context | None):
+    async def generate_pcb_thumbnail(project_path: str, ctx: Context | None = None) -> Image | None:
         """Generate a thumbnail image of a KiCad PCB layout using kicad-cli.
 
         Args:
@@ -96,14 +97,14 @@ def register_export_tools(mcp: FastMCP) -> None:
             return None
 
     @mcp.tool()
-    async def generate_project_thumbnail(project_path: str, ctx: Context | None):
+    async def generate_project_thumbnail(project_path: str, ctx: Context | None = None) -> Image | None:
         """Generate a thumbnail of a KiCad project's PCB layout (Alias for generate_pcb_thumbnail)."""
         # This function now just calls the main CLI-based thumbnail generator
         print(f"generate_project_thumbnail called, redirecting to generate_pcb_thumbnail for {project_path}")
         return await generate_pcb_thumbnail(project_path, ctx)
 
 # Helper functions for thumbnail generation
-async def generate_thumbnail_with_cli(pcb_file: str, ctx: Context | None):
+async def generate_thumbnail_with_cli(pcb_file: str, ctx: Context | None = None) -> Image | None:
     """Generate PCB thumbnail using command line tools.
     This is a fallback method when the kicad Python module is not available or fails.
 

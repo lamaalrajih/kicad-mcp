@@ -694,12 +694,13 @@ def identify_sensor_interfaces(components: Dict[str, Any], nets: Dict[str, Any])
     return sensor_interfaces
 
 
-def identify_microcontrollers(components: Dict[str, Any]) -> List[Dict[str, Any]]:
+def identify_microcontrollers(components: Dict[str, Any], nets: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Identify microcontroller circuits in the schematic.
-    
+
     Args:
         components: Dictionary of components from netlist
-        
+        nets: Dictionary of nets from netlist
+
     Returns:
         List of identified microcontroller circuits
     """

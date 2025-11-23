@@ -168,8 +168,17 @@ class KiCadCLIManager:
                 ]
             )
         elif self._system == "Windows":
+            # Check version-specific paths first (KiCad 8.0+)
+            # Try multiple versions in descending order to find the newest
             paths.extend(
                 [
+                    r"C:\Program Files\KiCad\10.0\bin\kicad-cli.exe",
+                    r"C:\Program Files\KiCad\9.0\bin\kicad-cli.exe",
+                    r"C:\Program Files\KiCad\8.0\bin\kicad-cli.exe",
+                    r"C:\Program Files (x86)\KiCad\10.0\bin\kicad-cli.exe",
+                    r"C:\Program Files (x86)\KiCad\9.0\bin\kicad-cli.exe",
+                    r"C:\Program Files (x86)\KiCad\8.0\bin\kicad-cli.exe",
+                    # Fallback to old non-versioned paths (KiCad 7.0 and earlier)
                     r"C:\Program Files\KiCad\bin\kicad-cli.exe",
                     r"C:\Program Files (x86)\KiCad\bin\kicad-cli.exe",
                     r"C:\KiCad\bin\kicad-cli.exe",

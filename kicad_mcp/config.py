@@ -46,7 +46,13 @@ if system == "Darwin":  # macOS
     KICAD_APP_PATH = "/Applications/KiCad/KiCad.app"
 elif system == "Windows":
     KICAD_USER_DIR = os.path.expanduser("~/Documents/KiCad")
+    # Auto-detect KiCad version on Windows (try 10.0, 9.0, 8.0, then fallback to non-versioned)
     KICAD_APP_PATH = r"C:\Program Files\KiCad"
+    for version in ["10.0", "9.0", "8.0"]:
+        versioned_path = rf"C:\Program Files\KiCad\{version}"
+        if os.path.exists(versioned_path):
+            KICAD_APP_PATH = versioned_path
+            break
 elif system == "Linux":
     KICAD_USER_DIR = os.path.expanduser("~/KiCad")
     KICAD_APP_PATH = "/usr/share/kicad"

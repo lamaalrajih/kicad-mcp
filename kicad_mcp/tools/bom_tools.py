@@ -6,9 +6,11 @@ import csv
 import json
 import pandas as pd
 from typing import Dict, List, Any, Optional, Tuple
-from mcp.server.fastmcp import FastMCP, Context, Image
+from fastmcp import FastMCP, Context
+from fastmcp.utilities.types import Image
 
 from kicad_mcp.utils.file_utils import get_project_files
+from kicad_mcp.utils.kicad_cli import find_kicad_cli
 
 def register_bom_tools(mcp: FastMCP) -> None:
     """Register BOM-related tools with the MCP server.
@@ -18,7 +20,7 @@ def register_bom_tools(mcp: FastMCP) -> None:
     """
     
     @mcp.tool()
-    async def analyze_bom(project_path: str, ctx: Context | None) -> Dict[str, Any]:
+    async def analyze_bom(project_path: str, ctx: Context | None = None) -> Dict[str, Any]:
         """Analyze a KiCad project's Bill of Materials.
         
         This tool will look for BOM files related to a KiCad project and provide
@@ -159,7 +161,7 @@ def register_bom_tools(mcp: FastMCP) -> None:
         return results
     
     @mcp.tool()
-    async def export_bom_csv(project_path: str, ctx: Context | None) -> Dict[str, Any]:
+    async def export_bom_csv(project_path: str, ctx: Context | None = None) -> Dict[str, Any]:
         """Export a Bill of Materials for a KiCad project.
         
         This tool attempts to generate a CSV BOM file for a KiCad project.
@@ -583,7 +585,7 @@ def analyze_bom_data(components: List[Dict[str, Any]], format_info: Dict[str, An
     return results
 
 
-async def export_bom_with_python(schematic_file: str, output_dir: str, project_name: str, ctx: Context | None) -> Dict[str, Any]:
+async def export_bom_with_python(schematic_file: str, output_dir: str, project_name: str, ctx: Context | None = None) -> Dict[str, Any]:
     """Export a BOM using KiCad Python modules.
     
     Args:
@@ -626,96 +628,48 @@ async def export_bom_with_python(schematic_file: str, output_dir: str, project_n
         }
 
 
-async def export_bom_with_cli(schematic_file: str, output_dir: str, project_name: str, ctx: Context | None) -> Dict[str, Any]:
+async def export_bom_with_cli(schematic_file: str, output_dir: str, project_name: str, ctx: Context | None = None) -> Dict[str, Any]:
     """Export a BOM using KiCad command-line tools.
-    
+
     Args:
         schematic_file: Path to the schematic file
         output_dir: Directory to save the BOM
         project_name: Name of the project
         ctx: MCP context for progress reporting
-        
+
     Returns:
         Dictionary with export results
     """
     import subprocess
-    import platform
-    
-    system = platform.system()
-    print(f"Exporting BOM using CLI tools on {system}")
+
+    print(f"Exporting BOM using CLI tools")
     if ctx:
         await ctx.report_progress(40, 100)
-    
+
     # Output file path
     output_file = os.path.join(output_dir, f"{project_name}_bom.csv")
-    
-    # Define the command based on operating system
-    if system == "Darwin":  # macOS
-        from kicad_mcp.config import KICAD_APP_PATH
-        
-        # Path to KiCad command-line tools on macOS
-        kicad_cli = os.path.join(KICAD_APP_PATH, "Contents/MacOS/kicad-cli")
-        
-        if not os.path.exists(kicad_cli):
-            return {
-                "success": False,
-                "error": f"KiCad CLI tool not found at {kicad_cli}",
-                "schematic_file": schematic_file
-            }
-        
-        # Command to generate BOM
-        cmd = [
-            kicad_cli,
-            "sch",
-            "export",
-            "bom",
-            "--output", output_file,
-            schematic_file
-        ]
-    
-    elif system == "Windows":
-        from kicad_mcp.config import KICAD_APP_PATH
-        
-        # Path to KiCad command-line tools on Windows
-        kicad_cli = os.path.join(KICAD_APP_PATH, "bin", "kicad-cli.exe")
-        
-        if not os.path.exists(kicad_cli):
-            return {
-                "success": False,
-                "error": f"KiCad CLI tool not found at {kicad_cli}",
-                "schematic_file": schematic_file
-            }
-        
-        # Command to generate BOM
-        cmd = [
-            kicad_cli,
-            "sch",
-            "export",
-            "bom",
-            "--output", output_file,
-            schematic_file
-        ]
-    
-    elif system == "Linux":
-        # Assume kicad-cli is in the PATH
-        kicad_cli = "kicad-cli"
-        
-        # Command to generate BOM
-        cmd = [
-            kicad_cli,
-            "sch",
-            "export",
-            "bom",
-            "--output", output_file,
-            schematic_file
-        ]
-    
-    else:
+
+    # Find kicad-cli using centralized utility
+    kicad_cli = find_kicad_cli()
+
+    if not kicad_cli:
         return {
             "success": False,
-            "error": f"Unsupported operating system: {system}",
+            "error": "KiCad CLI tool not found. Please ensure KiCad 8.0+ is installed.",
             "schematic_file": schematic_file
         }
+
+    print(f"Found KiCad CLI at: {kicad_cli}")
+
+    # Command to generate BOM
+    cmd = [
+        kicad_cli,
+        "sch",
+        "export",
+        "bom",
+        "--output", output_file,
+        schematic_file
+    ]
     
     try:
         print(f"Running command: {' '.join(cmd)}")

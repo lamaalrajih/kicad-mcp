@@ -1,0 +1,249 @@
+{
+  "metadata": {
+    "source": "Altium MCP Server",
+    "project": "Astro-DB.PrjPCB",
+    "extraction_date": "2025-11-21",
+    "description": "Sample data showing component parameters, pins, and nets from multiple schematic pages"
+  },
+  "components": [
+    {
+      "designator": "U1",
+      "lib_reference": "LTC7003EMSE#TRPBF",
+      "description": "IC GATE DRVR N-CH MOSFET 16 MSOP",
+      "footprint": "MSE16",
+      "sheet": "Power_Switches.SchDoc",
+      "schematic_x": 6100,
+      "schematic_y": 3700,
+      "parameters": {
+        "MFG": "Linear Tech",
+        "PN": "LTC7003EMSE#TRPBF",
+        "Comment": "LTC7003EMSE#TRPBF",
+        "Description": "IC GATE DRVR N-CH MOSFET 16 MSOP"
+      },
+      "pins": [
+        {"name": "1", "net": "NetR46_1"},
+        {"name": "2", "net": "FUSE_VOUT"},
+        {"name": "3", "net": "NetC5_1"},
+        {"name": "4", "net": "NetE7_1"},
+        {"name": "5", "net": "GIMBAL_PWR_FAULT"},
+        {"name": "6", "net": "NetC7_1"},
+        {"name": "7", "net": "GIMBAL_PWR_EN"},
+        {"name": "8", "net": "NetR40_1"},
+        {"name": "9", "net": "NetR53_2"},
+        {"name": "10", "net": "NetE9_1"},
+        {"name": "11", "net": "NetC1_1"},
+        {"name": "12", "net": "NetR35_1"},
+        {"name": "13", "net": "GIMBAL_PWR"},
+        {"name": "14", "net": "NetC3_2"},
+        {"name": "15", "net": "NetR33_1"},
+        {"name": "16", "net": "GIMBAL_PWR_P"},
+        {"name": "17", "net": "GND"}
+      ]
+    },
+    {
+      "designator": "U200",
+      "lib_reference": "LTC1760CFW#PBF",
+      "description": "Battery Charger IC Li-Ion/Polymer 48-TSSOP",
+      "footprint": "TSSOP-48",
+      "sheet": "battery_charger.SchDoc",
+      "schematic_x": 4700,
+      "schematic_y": 10500,
+      "parameters": {
+        "MFG": "Linear Technology/Analog Devices",
+        "PN": "LTC1760CFW#PBF",
+        "Comment": "LTC1760CFW"
+      },
+      "pins": [
+        {"name": "1", "net": "NetC217_1"},
+        {"name": "2", "net": "V_B2"},
+        {"name": "3", "net": "V_B1"},
+        {"name": "18", "net": "CHARGER_SCL"},
+        {"name": "22", "net": "CHARGER_SDA"},
+        {"name": "24", "net": "GND"},
+        {"name": "29", "net": "CHARGER_INTB"},
+        {"name": "32", "net": "ILIM"},
+        {"name": "33", "net": "VLIM"},
+        {"name": "40", "net": "LTC1760_VCC"},
+        {"name": "42", "net": "LTC1760_SW"}
+      ]
+    },
+    {
+      "designator": "R1",
+      "lib_reference": "LVK12R010DER",
+      "description": "RES 0.01 OHM 1% 3W 2512",
+      "footprint": "LVK-RESC6432X65N",
+      "sheet": "Power_Switches.SchDoc",
+      "schematic_x": 5100,
+      "schematic_y": 6900,
+      "parameters": {
+        "MFG": "Ohmite",
+        "PN": "LVK12R010DER",
+        "Comment": "0.01"
+      },
+      "pins": [
+        {"name": "1", "net": "FUSE_VOUT"},
+        {"name": "2", "net": "NetQ6_D"},
+        {"name": "3", "net": "GIMBAL_PWR_P"},
+        {"name": "4", "net": "GIMBAL_PWR_N"}
+      ]
+    },
+    {
+      "designator": "C1",
+      "lib_reference": "CL10A474KB8NNNC",
+      "description": "CAP CER 0.47UF 50V X5R 0603",
+      "footprint": "AP2-00076",
+      "sheet": "Power_Switches.SchDoc",
+      "schematic_x": 7600,
+      "schematic_y": 5800,
+      "parameters": {
+        "PN": "CL10A474KB8NNNC",
+        "MFG": "Samsung",
+        "Voltage": "50V",
+        "PKG": "0603",
+        "Comment": "0.47u"
+      },
+      "pins": [
+        {"name": "1", "net": "NetC1_1"},
+        {"name": "2", "net": "GND"}
+      ]
+    },
+    {
+      "designator": "Q1",
+      "lib_reference": "SI4459BDY-T1-GE3",
+      "description": "MOSFET N-CH 30V 10A 8-SOIC",
+      "footprint": "SOIC-8",
+      "sheet": "Power_Misc.SchDoc",
+      "schematic_x": 4400,
+      "schematic_y": 7300,
+      "parameters": {
+        "MFG": "Vishay Siliconix",
+        "PN": "SI4459BDY-T1-GE3",
+        "Comment": "SI4459BDY-T1-GE3"
+      },
+      "pins": [
+        {"name": "S", "net": "CHARGER_VOUT"},
+        {"name": "G", "net": "NetE8_1"},
+        {"name": "D", "net": "FUSE_VIN"}
+      ]
+    },
+    {
+      "designator": "J1",
+      "lib_reference": "685119134923",
+      "description": "HDMI Type A Receptacle Connector",
+      "footprint": "HDMI-685119134923",
+      "sheet": "Astro_Connectors2.SchDoc",
+      "schematic_x": 7600,
+      "schematic_y": 5200,
+      "parameters": {
+        "PN": "685119134923",
+        "MFG": "Wurth Electronics Inc.",
+        "Connector Type": "HDMI Type A",
+        "Gender": "Receptacle",
+        "Comment": "685119134923"
+      },
+      "pins": [
+        {"name": "1", "net": "HDMI_DATA2_P"},
+        {"name": "2", "net": "GND"},
+        {"name": "3", "net": "HDMI_DATA2_N"},
+        {"name": "4", "net": "HDMI_DATA1_P"},
+        {"name": "7", "net": "HDMI_DATA0_P"},
+        {"name": "10", "net": "HDMI_CLOCK_P"},
+        {"name": "13", "net": "HDMI_CEC"},
+        {"name": "15", "net": "HDMI_SCL"},
+        {"name": "16", "net": "HDMI_SDA"},
+        {"name": "18", "net": "HDMI_5V_PWR"},
+        {"name": "19", "net": "HDMI_HPD"},
+        {"name": "Shell", "net": "NetJ1_Shell"}
+      ]
+    },
+    {
+      "designator": "LED1",
+      "lib_reference": "AAA3528LSEEZGKQBKS",
+      "description": "LED RGB 3528 SMD",
+      "footprint": "LED-3528",
+      "sheet": "Astro_Connectors1.SchDoc",
+      "schematic_x": 8500,
+      "schematic_y": 4100,
+      "parameters": {
+        "MFG": "Kingbright",
+        "PN": "AAA3528LSEEZGKQBKS",
+        "Comment": "AAA3528LSEEZGKQBKS"
+      },
+      "pins": [
+        {"name": "1", "net": ""},
+        {"name": "2", "net": "VCC_ASTRO_3.3"},
+        {"name": "3", "net": "NetLED1_3"},
+        {"name": "4", "net": "NetLED1_4"}
+      ]
+    },
+    {
+      "designator": "BTN1",
+      "lib_reference": "CMP-2807e11d2f1ef7c0-1",
+      "description": "Switch Tactile N.O. SPST Round Button Gull Wing 0.05A 12VDC 100000Cycles 1.57N SMD T/R",
+      "footprint": "TL3301FF160QG",
+      "sheet": "Astro_Connectors1.SchDoc",
+      "schematic_x": 6400,
+      "schematic_y": 6000,
+      "parameters": {
+        "PN": "TL3301FF160QG",
+        "MFG": "E-Switch",
+        "Comment": "TL3301FF160QG"
+      },
+      "pins": [
+        {"name": "1", "net": ""},
+        {"name": "2", "net": ""},
+        {"name": "3", "net": ""},
+        {"name": "4", "net": ""}
+      ]
+    },
+    {
+      "designator": "R214",
+      "lib_reference": "RES",
+      "description": "RES SMD 10K OHM 1% 1/10W 0603",
+      "footprint": "RESC1608X55N",
+      "sheet": "battery_charger.SchDoc",
+      "schematic_x": 3200,
+      "schematic_y": 8500,
+      "parameters": {
+        "MFG": "Yageo",
+        "PN": "RC0603FR-0710KL",
+        "Comment": "10k"
+      },
+      "pins": [
+        {"name": "1", "net": "VLIM"},
+        {"name": "2", "net": "GND"}
+      ]
+    },
+    {
+      "designator": "C218",
+      "lib_reference": "CAP-NONPOL",
+      "description": "CAP CER 4.7UF 16V X5R 0603",
+      "footprint": "AP2-00076",
+      "sheet": "battery_charger.SchDoc",
+      "schematic_x": 5800,
+      "schematic_y": 9200,
+      "parameters": {
+        "MFG": "Samsung",
+        "PN": "CL10A475KQ8NNNC",
+        "Comment": "4.7u"
+      },
+      "pins": [
+        {"name": "1", "net": "NetC218_1"},
+        {"name": "2", "net": "GND"}
+      ]
+    }
+  ],
+  "nets": [
+    {"name": "GND", "global": true, "page_count": 13},
+    {"name": "VCC_3.3", "global": true, "page_count": 8},
+    {"name": "GIMBAL_PWR_FAULT", "global": false, "page_count": 2},
+    {"name": "GIMBAL_PWR_EN", "global": false, "page_count": 2},
+    {"name": "FUSE_VOUT", "global": false, "page_count": 1},
+    {"name": "CHARGER_SDA", "global": false, "page_count": 2},
+    {"name": "CHARGER_SCL", "global": false, "page_count": 2},
+    {"name": "HDMI_DATA2_P", "global": false, "page_count": 1},
+    {"name": "HDMI_SCL", "global": false, "page_count": 2},
+    {"name": "UART0_TXD", "global": false, "page_count": 2},
+    {"name": "UART0_RXD", "global": false, "page_count": 2}
+  ]
+}

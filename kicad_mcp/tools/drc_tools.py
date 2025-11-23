@@ -63,7 +63,7 @@ def register_drc_tools(mcp: FastMCP) -> None:
         }
     
     @mcp.tool()
-    async def run_drc_check(project_path: str, ctx: Context | None) -> Dict[str, Any]:
+    async def run_drc_check(project_path: str, ctx: Context | None = None) -> Dict[str, Any]:
         """Run a Design Rule Check on a KiCad PCB file.
         
         Args:

@@ -70,3 +70,12 @@ fp-info-cache
 *.kicad_sch.lck
 *.kicad_pcb.lck
 *.kicad_pro.lck
+
+# Test outputs (keep test scripts in tests/ directory)
+tests/outputs/*.txt
+tests/outputs/*.json
+tests/outputs/*.csv
+
+# Temporary/cleanup files
+cleanup.bat
+cleanup_plan.md

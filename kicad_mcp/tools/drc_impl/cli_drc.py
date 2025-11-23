@@ -9,8 +9,9 @@ from typing import Dict, Any, Optional
 from mcp.server.fastmcp import Context
 
 from kicad_mcp.config import system
+from kicad_mcp.utils.kicad_cli import find_kicad_cli
 
-async def run_drc_via_cli(pcb_file: str, ctx: Context | None) -> Dict[str, Any]:
+async def run_drc_via_cli(pcb_file: str, ctx: Context | None = None) -> Dict[str, Any]:
     """Run DRC using KiCad command line tools.
     
     Args:
@@ -113,56 +114,3 @@ async def run_drc_via_cli(pcb_file: str, ctx: Context | None) -> Dict[str, Any]:
         print(f"Error in CLI DRC: {str(e)}", exc_info=True)
         results["error"] = f"Error in CLI DRC: {str(e)}"
         return results
-
-
-def find_kicad_cli() -> Optional[str]:
-    """Find the kicad-cli executable in the system PATH.
-    
-    Returns:
-        Path to kicad-cli if found, None otherwise
-    """
-    # Check if kicad-cli is in PATH
-    try:
-        if system == "Windows":
-            # On Windows, check for kicad-cli.exe
-            result = subprocess.run(["where", "kicad-cli.exe"], capture_output=True, text=True)
-            if result.returncode == 0:
-                return result.stdout.strip().split("\n")[0]
-        else:
-            # On Unix-like systems, use which
-            result = subprocess.run(["which", "kicad-cli"], capture_output=True, text=True)
-            if result.returncode == 0:
-                return result.stdout.strip()
-    
-    except Exception as e:
-        print(f"Error finding kicad-cli: {str(e)}")
-    
-    # If we get here, kicad-cli is not in PATH
-    # Try common installation locations
-    if system == "Windows":
-        # Common Windows installation path
-        potential_paths = [
-            r"C:\Program Files\KiCad\bin\kicad-cli.exe",
-            r"C:\Program Files (x86)\KiCad\bin\kicad-cli.exe"
-        ]
-    elif system == "Darwin":  # macOS
-        # Common macOS installation paths
-        potential_paths = [
-            "/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli",
-            "/Applications/KiCad/kicad-cli"
-        ]
-    else:  # Linux and other Unix-like systems
-        # Common Linux installation paths
-        potential_paths = [
-            "/usr/bin/kicad-cli",
-            "/usr/local/bin/kicad-cli",
-            "/opt/kicad/bin/kicad-cli"
-        ]
-    
-    # Check each potential path
-    for path in potential_paths:
-        if os.path.exists(path) and os.access(path, os.X_OK):
-            return path
-    
-    # If still not found, return None
-    return None

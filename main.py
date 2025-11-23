@@ -72,8 +72,7 @@ if __name__ == "__main__":
 
         # Run server
         logging.info(f"Running server with stdio transport") # Changed print to logging
-        import asyncio
-        asyncio.run(server_main())
+        server_main()
     except Exception as e:
         logging.exception(f"Unhandled exception in main") # Log exception details
         raise

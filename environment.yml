@@ -1,0 +1,15 @@
+name: kicad-mcp
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.10
+  - pip
+  - pycairo  # Cairo graphics library for board rendering
+  - pillow   # Image manipulation
+  - pip:
+    - mcp[cli]>=1.0.0
+    - fastmcp>=2.0.0
+    - pandas>=2.0.0
+    - pyyaml>=6.0.0
+    - defusedxml>=0.7.0
