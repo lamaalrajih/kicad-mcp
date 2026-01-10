@@ -759,6 +759,7 @@ source = { editable = "." }
 dependencies = [
     { name = "defusedxml" },
     { name = "fastmcp" },
+    { name = "filelock" },
     { name = "mcp", extra = ["cli"] },
     { name = "pandas" },
     { name = "pyyaml" },
@@ -800,6 +801,7 @@ visualization = [
 requires-dist = [
     { name = "defusedxml", specifier = ">=0.7.0" },
     { name = "fastmcp", specifier = ">=2.0.0" },
+    { name = "filelock", specifier = ">=3.0.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.0.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pyyaml", specifier = ">=6.0.0" },

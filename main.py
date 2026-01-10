@@ -35,7 +35,7 @@ _PID = os.getpid()
 # This attempts to update os.environ
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 logging.info(f"Attempting to load .env file from: {dotenv_path}")
-found_dotenv = load_dotenv() # Assuming this returns True/False or similar
+found_dotenv = load_dotenv(dotenv_path) # Assuming this returns True/False or similar
 logging.info(f".env file found and loaded: {found_dotenv}")
 
 # Log effective values AFTER load_dotenv attempt

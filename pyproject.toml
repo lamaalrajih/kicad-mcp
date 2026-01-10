@@ -47,6 +47,7 @@ dependencies = [
     "pandas>=2.0.0",
     "pyyaml>=6.0.0",
     "defusedxml>=0.7.0",  # Secure XML parsing
+    "filelock>=3.0.0",  # Cross-platform file locking
 ]
 
 [project.urls]
