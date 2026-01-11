@@ -7,18 +7,24 @@ from typing import Dict, Optional
 
 def load_dotenv(env_file: str = ".env") -> Dict[str, str]:
     """Load environment variables from .env file.
-    
+
     Args:
-        env_file: Path to the .env file
-        
+        env_file: Path to the .env file (can be absolute or relative)
+
     Returns:
         Dictionary of loaded environment variables
     """
     env_vars = {}
     logging.info(f"load_dotenv called for file: {env_file}")
-    
-    # Try to find .env file in the current directory or parent directories
-    env_path = find_env_file(env_file)
+
+    # Check if env_file is an absolute path
+    if os.path.isabs(env_file):
+        env_path = env_file if os.path.exists(env_file) else None
+        if env_path:
+            logging.info(f"Using absolute path: {env_path}")
+    else:
+        # Try to find .env file in the current directory or parent directories
+        env_path = find_env_file(env_file)
     
     if not env_path:
         logging.warning(f"No .env file found matching: {env_file}")

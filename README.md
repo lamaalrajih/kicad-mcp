@@ -102,6 +102,16 @@ vim ~/Library/Application\ Support/Claude/claude_desktop_config.json
 
 Replace `/ABSOLUTE/PATH/TO/YOUR/PROJECT/kicad-mcp` with the actual path to your project directory.
 
+#### Claude Code (CLI)
+
+For Claude Code users on Linux, macOS, or Windows:
+
+```bash
+claude mcp add kicad /ABSOLUTE/PATH/TO/kicad-mcp/.venv/bin/python -- /ABSOLUTE/PATH/TO/kicad-mcp/main.py
+```
+
+Replace `/ABSOLUTE/PATH/TO/kicad-mcp` with your actual path.
+
 ### 5. Restart Your MCP Client
 
 Close and reopen your MCP client to load the new configuration.

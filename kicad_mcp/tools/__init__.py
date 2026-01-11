@@ -6,4 +6,5 @@ This package includes:
 - Analysis tools
 - Export tools (BOM extraction, PCB thumbnail generation)
 - DRC tools
+- Symbol library tools
 """
