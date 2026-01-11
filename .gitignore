@@ -70,3 +70,6 @@ fp-info-cache
 *.kicad_sch.lck
 *.kicad_pcb.lck
 *.kicad_pro.lck
+
+# Local development notes
+.local/
