@@ -455,3 +455,423 @@ print(json.dumps({{
 }}))
 """
         return run_pcbnew_script(script)
+
+    @mcp.tool()
+    def add_via(
+        pcb_path: str,
+        x_mm: float,
+        y_mm: float,
+        drill_mm: float = 0.3,
+        size_mm: float = 0.6,
+        net_name: str = "",
+        via_type: str = "through",
+    ) -> Dict[str, Any]:
+        """Add a via to the PCB.
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+            x_mm: X position in millimeters.
+            y_mm: Y position in millimeters.
+            drill_mm: Drill diameter in mm (default 0.3).
+            size_mm: Via pad diameter in mm (default 0.6).
+            net_name: Net name to assign (empty for unassigned).
+            via_type: Via type - "through", "blind_buried", or "micro" (default "through").
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+
+via = pcbnew.PCB_VIA(board)
+via.SetPosition(pcbnew.VECTOR2I(pcbnew.FromMM({x_mm}), pcbnew.FromMM({y_mm})))
+via.SetDrill(pcbnew.FromMM({drill_mm}))
+via.SetWidth(pcbnew.FromMM({size_mm}))
+
+via_type = {via_type!r}
+if via_type == "blind_buried":
+    via.SetViaType(pcbnew.VIATYPE_BLIND_BURIED)
+elif via_type == "micro":
+    via.SetViaType(pcbnew.VIATYPE_MICROVIA)
+else:
+    via.SetViaType(pcbnew.VIATYPE_THROUGH)
+
+net_name = {net_name!r}
+if net_name:
+    net = board.FindNet(net_name)
+    if net:
+        via.SetNet(net)
+
+board.Add(via)
+board.Save(board.GetFileName())
+
+print(json.dumps({{
+    "status": "ok",
+    "via": {{
+        "x_mm": {x_mm},
+        "y_mm": {y_mm},
+        "drill_mm": {drill_mm},
+        "size_mm": {size_mm},
+        "type": via_type,
+        "net": net_name,
+    }},
+}}))
+"""
+        return run_pcbnew_script(script)
+
+    @mcp.tool()
+    def add_copper_zone(
+        pcb_path: str,
+        net_name: str,
+        layer: str = "F.Cu",
+        corners: List[List[float]] = [],
+        clearance_mm: float = 0.3,
+        min_width_mm: float = 0.2,
+        connect_pads: str = "thermal",
+        priority: int = 0,
+    ) -> Dict[str, Any]:
+        """Add a copper zone (pour/fill) to the PCB.
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+            net_name: Net name for the zone (e.g., "GND").
+            layer: Copper layer (default "F.Cu").
+            corners: List of [x_mm, y_mm] corner points defining the zone outline.
+            clearance_mm: Clearance to other nets in mm (default 0.3).
+            min_width_mm: Minimum fill width in mm (default 0.2).
+            connect_pads: Pad connection type - "thermal", "solid", or "none" (default "thermal").
+            priority: Zone priority (higher fills first, default 0).
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        if len(corners) < 3:
+            return {"error": "Zone needs at least 3 corner points"}
+
+        corners_repr = repr(corners)
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+
+net = board.FindNet({net_name!r})
+if net is None or net.GetNetCode() == 0:
+    print(json.dumps({{"error": f"Net {net_name!r} not found"}}))
+    raise SystemExit(0)
+
+zone = pcbnew.ZONE(board)
+zone.SetNet(net)
+zone.SetLayer(board.GetLayerID({layer!r}))
+zone.SetAssignedPriority({priority})
+
+# Set clearance and minimum width
+zone.SetLocalClearance(pcbnew.FromMM({clearance_mm}))
+zone.SetMinThickness(pcbnew.FromMM({min_width_mm}))
+
+# Set pad connection type
+connect = {connect_pads!r}
+if connect == "solid":
+    zone.SetPadConnection(pcbnew.ZONE_CONNECTION_FULL)
+elif connect == "none":
+    zone.SetPadConnection(pcbnew.ZONE_CONNECTION_NONE)
+else:
+    zone.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL)
+
+# Build outline
+outline = zone.Outline()
+outline.NewOutline()
+corners = {corners_repr}
+for i, (cx, cy) in enumerate(corners):
+    outline.Append(pcbnew.FromMM(cx), pcbnew.FromMM(cy))
+
+board.Add(zone)
+
+# Fill the zone
+filler = pcbnew.ZONE_FILLER(board)
+zones = board.Zones()
+zone_list = pcbnew.ZONES()
+for z in zones:
+    zone_list.append(z)
+filler.Fill(zone_list)
+
+board.Save(board.GetFileName())
+
+print(json.dumps({{
+    "status": "ok",
+    "zone": {{
+        "net": {net_name!r},
+        "layer": {layer!r},
+        "corners": corners,
+        "clearance_mm": {clearance_mm},
+        "min_width_mm": {min_width_mm},
+        "connect_pads": connect,
+        "priority": {priority},
+    }},
+}}))
+"""
+        return run_pcbnew_script(script, timeout=60.0)
+
+    @mcp.tool()
+    def set_design_rules(
+        pcb_path: str,
+        min_track_width_mm: float = 0.2,
+        min_clearance_mm: float = 0.2,
+        min_via_diameter_mm: float = 0.6,
+        min_via_drill_mm: float = 0.3,
+        min_hole_to_hole_mm: float = 0.25,
+    ) -> Dict[str, Any]:
+        """Set PCB design rules (DRC constraints).
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+            min_track_width_mm: Minimum track width in mm (default 0.2).
+            min_clearance_mm: Minimum clearance between copper in mm (default 0.2).
+            min_via_diameter_mm: Minimum via pad diameter in mm (default 0.6).
+            min_via_drill_mm: Minimum via drill diameter in mm (default 0.3).
+            min_hole_to_hole_mm: Minimum hole-to-hole distance in mm (default 0.25).
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+ds = board.GetDesignSettings()
+
+ds.SetCopperLayerCount(2)
+ds.m_TrackMinWidth = pcbnew.FromMM({min_track_width_mm})
+ds.m_MinClearance = pcbnew.FromMM({min_clearance_mm})
+ds.m_ViasMinSize = pcbnew.FromMM({min_via_diameter_mm})
+ds.m_ViasMinDrill = pcbnew.FromMM({min_via_drill_mm})
+ds.m_HoleToHoleMin = pcbnew.FromMM({min_hole_to_hole_mm})
+
+board.Save(board.GetFileName())
+
+print(json.dumps({{
+    "status": "ok",
+    "design_rules": {{
+        "min_track_width_mm": {min_track_width_mm},
+        "min_clearance_mm": {min_clearance_mm},
+        "min_via_diameter_mm": {min_via_diameter_mm},
+        "min_via_drill_mm": {min_via_drill_mm},
+        "min_hole_to_hole_mm": {min_hole_to_hole_mm},
+    }},
+}}))
+"""
+        return run_pcbnew_script(script)
+
+    @mcp.tool()
+    def bulk_assign_pad_nets(
+        pcb_path: str,
+        assignments: List[Dict[str, str]] = [],
+    ) -> Dict[str, Any]:
+        """Assign nets to multiple pads in a single operation.
+
+        Each assignment is a dict with "reference", "pad", and "net" keys.
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+            assignments: List of {"reference": "R1", "pad": "1", "net": "GND"} dicts.
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        if not assignments:
+            return {"error": "No assignments provided"}
+
+        assignments_repr = repr(assignments)
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+
+assignments = {assignments_repr}
+results = []
+errors = []
+
+for a in assignments:
+    ref = a["reference"]
+    pad_num = a["pad"]
+    net_name = a["net"]
+
+    fp = board.FindFootprintByReference(ref)
+    if fp is None:
+        errors.append(f"Footprint {{ref}} not found")
+        continue
+
+    net = board.FindNet(net_name)
+    if net is None or net.GetNetCode() == 0:
+        errors.append(f"Net {{net_name}} not found")
+        continue
+
+    pad_found = False
+    for pad in fp.Pads():
+        if pad.GetNumber() == pad_num:
+            pad.SetNet(net)
+            pad_found = True
+            results.append({{"reference": ref, "pad": pad_num, "net": net_name}})
+            break
+
+    if not pad_found:
+        errors.append(f"Pad {{pad_num}} not found on {{ref}}")
+
+board.Save(board.GetFileName())
+
+print(json.dumps({{
+    "status": "ok",
+    "assigned": len(results),
+    "errors": errors,
+    "results": results,
+}}))
+"""
+        return run_pcbnew_script(script)
+
+    @mcp.tool()
+    def move_footprint(
+        pcb_path: str,
+        reference: str,
+        x_mm: float,
+        y_mm: float,
+        rotation_deg: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Move a footprint to a new position on the PCB.
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+            reference: Component reference (e.g., "R1").
+            x_mm: New X position in millimeters.
+            y_mm: New Y position in millimeters.
+            rotation_deg: New rotation in degrees (None to keep current).
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        rot_code = f"fp.SetOrientationDegrees({rotation_deg})" if rotation_deg is not None else ""
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+
+fp = board.FindFootprintByReference({reference!r})
+if fp is None:
+    print(json.dumps({{"error": f"Footprint {reference!r} not found"}}))
+    raise SystemExit(0)
+
+fp.SetPosition(pcbnew.VECTOR2I(pcbnew.FromMM({x_mm}), pcbnew.FromMM({y_mm})))
+{rot_code}
+
+board.Save(board.GetFileName())
+
+pos = fp.GetPosition()
+print(json.dumps({{
+    "status": "ok",
+    "reference": {reference!r},
+    "x_mm": round(pcbnew.ToMM(pos.x), 3),
+    "y_mm": round(pcbnew.ToMM(pos.y), 3),
+    "rotation": fp.GetOrientationDegrees(),
+}}))
+"""
+        return run_pcbnew_script(script)
+
+    @mcp.tool()
+    def get_pad_positions(
+        pcb_path: str,
+        reference: str,
+    ) -> Dict[str, Any]:
+        """Get all pad positions for a footprint.
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+            reference: Component reference (e.g., "R1").
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+
+fp = board.FindFootprintByReference({reference!r})
+if fp is None:
+    print(json.dumps({{"error": f"Footprint {reference!r} not found"}}))
+    raise SystemExit(0)
+
+pads = []
+for pad in fp.Pads():
+    pos = pad.GetPosition()
+    pads.append({{
+        "number": pad.GetNumber(),
+        "x_mm": round(pcbnew.ToMM(pos.x), 3),
+        "y_mm": round(pcbnew.ToMM(pos.y), 3),
+        "net": pad.GetNetname(),
+        "shape": str(pad.GetShape()),
+    }})
+
+print(json.dumps({{
+    "status": "ok",
+    "reference": {reference!r},
+    "pad_count": len(pads),
+    "pads": pads,
+}}))
+"""
+        return run_pcbnew_script(script)
+
+    @mcp.tool()
+    def add_text_to_pcb(
+        pcb_path: str,
+        text: str,
+        x_mm: float,
+        y_mm: float,
+        layer: str = "F.SilkS",
+        size_mm: float = 1.0,
+        thickness_mm: float = 0.15,
+        rotation_deg: float = 0.0,
+    ) -> Dict[str, Any]:
+        """Add text to the PCB.
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+            text: Text content.
+            x_mm: X position in millimeters.
+            y_mm: Y position in millimeters.
+            layer: PCB layer (default "F.SilkS").
+            size_mm: Text height in mm (default 1.0).
+            thickness_mm: Text line thickness in mm (default 0.15).
+            rotation_deg: Text rotation in degrees (default 0).
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+
+txt = pcbnew.PCB_TEXT(board)
+txt.SetText({text!r})
+txt.SetPosition(pcbnew.VECTOR2I(pcbnew.FromMM({x_mm}), pcbnew.FromMM({y_mm})))
+txt.SetLayer(board.GetLayerID({layer!r}))
+txt.SetTextSize(pcbnew.VECTOR2I(pcbnew.FromMM({size_mm}), pcbnew.FromMM({size_mm})))
+txt.SetTextThickness(pcbnew.FromMM({thickness_mm}))
+if {rotation_deg} != 0:
+    txt.SetTextAngleDegrees({rotation_deg})
+
+board.Add(txt)
+board.Save(board.GetFileName())
+
+print(json.dumps({{
+    "status": "ok",
+    "text": {text!r},
+    "x_mm": {x_mm},
+    "y_mm": {y_mm},
+    "layer": {layer!r},
+}}))
+"""
+        return run_pcbnew_script(script)
