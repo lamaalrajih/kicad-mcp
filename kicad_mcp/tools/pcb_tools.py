@@ -1018,7 +1018,7 @@ fp.SetPosition(pcbnew.VECTOR2I(pcbnew.FromMM({x_mm}), pcbnew.FromMM({y_mm})))
 if {rotation_deg} != 0:
     fp.SetOrientationDegrees({rotation_deg})
 
-fp_bbox = fp.GetBoundingBox()
+fp_bbox = fp.GetBoundingBox(False, False)  # exclude text for accurate body bbox
 fp_rect = {{
     "x_min_mm": round(pcbnew.ToMM(fp_bbox.GetX()), 3),
     "y_min_mm": round(pcbnew.ToMM(fp_bbox.GetY()), 3),
@@ -1111,7 +1111,7 @@ clean_count = 0
 
 for fp in board.GetFootprints():
     ref = fp.GetReference()
-    fp_bbox = fp.GetBoundingBox()
+    fp_bbox = fp.GetBoundingBox(False, False)  # exclude text for accurate body bbox
     fp_rect = {{
         "x_min_mm": round(pcbnew.ToMM(fp_bbox.GetX()), 3),
         "y_min_mm": round(pcbnew.ToMM(fp_bbox.GetY()), 3),
