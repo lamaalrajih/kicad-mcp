@@ -11,6 +11,7 @@ import os
 import platform
 import subprocess
 import tempfile
+import time
 from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
@@ -77,10 +78,13 @@ def run_pcbnew_script(script: str, timeout: float = 30.0) -> Dict[str, Any]:
     """
     kicad_python = _get_kicad_python()
     if not kicad_python:
+        logger.error("KiCad Python interpreter not found")
         raise RuntimeError(
             "KiCad Python interpreter not found. "
             "Ensure KiCad is installed."
         )
+
+    logger.debug("Using KiCad Python at %s", kicad_python)
 
     # Write script to a temp file (avoids shell quoting issues)
     with tempfile.NamedTemporaryFile(
@@ -88,6 +92,9 @@ def run_pcbnew_script(script: str, timeout: float = 30.0) -> Dict[str, Any]:
     ) as f:
         f.write(script)
         script_path = f.name
+
+    logger.debug("Executing pcbnew script %s (timeout=%.1fs)", script_path, timeout)
+    start_time = time.monotonic()
 
     try:
         env = _get_kicad_env()
@@ -99,6 +106,8 @@ def run_pcbnew_script(script: str, timeout: float = 30.0) -> Dict[str, Any]:
             env=env,
         )
 
+        elapsed = time.monotonic() - start_time
+
         if result.returncode != 0:
             stderr = result.stderr.strip()
             # Filter out the harmless wxApp assert
@@ -107,21 +116,35 @@ def run_pcbnew_script(script: str, timeout: float = 30.0) -> Dict[str, Any]:
                 if "assert" not in line and "wxApp" not in line
             ]
             error_msg = "\n".join(stderr_lines).strip()
+            logger.error(
+                "pcbnew script failed (exit %d, %.2fs): %s",
+                result.returncode, elapsed, error_msg[:500],
+            )
             raise RuntimeError(
                 f"pcbnew script failed (exit {result.returncode}): {error_msg}"
             )
 
         stdout = result.stdout.strip()
         if not stdout:
+            logger.error("pcbnew script produced no output (%.2fs)", elapsed)
             raise RuntimeError("pcbnew script produced no output")
 
         # Take the last line as JSON (in case of stray prints)
         json_line = stdout.split("\n")[-1]
-        return json.loads(json_line)
+        parsed = json.loads(json_line)
+
+        logger.debug("pcbnew script completed in %.2fs", elapsed)
+        return parsed
 
     except subprocess.TimeoutExpired:
+        elapsed = time.monotonic() - start_time
+        logger.error("pcbnew script timed out after %.2fs (limit=%.1fs)", elapsed, timeout)
         raise RuntimeError(f"pcbnew script timed out after {timeout}s")
     except json.JSONDecodeError as e:
+        logger.error(
+            "pcbnew script output is not valid JSON: %s\nOutput: %s",
+            e, result.stdout[:500],
+        )
         raise RuntimeError(
             f"pcbnew script output is not valid JSON: {e}\n"
             f"Output was: {result.stdout[:500]}"
