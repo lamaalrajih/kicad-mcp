@@ -1182,3 +1182,348 @@ print(json.dumps({{
 }}))
 """
         return run_pcbnew_script(script)
+
+    # =========================================================================
+    # Zone fill tools
+    # =========================================================================
+
+    @mcp.tool()
+    def fill_zones(pcb_path: str) -> Dict[str, Any]:
+        """Fill all copper zones on the PCB.
+
+        Runs the zone filler headlessly to compute copper fills for all
+        non-rule-area zones. This replaces the manual "press B in KiCad" step.
+        Zones must already exist on the board (use add_copper_zone first).
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+
+# Count copper zones (skip rule areas)
+copper_zones = []
+for z in board.Zones():
+    if not z.GetIsRuleArea():
+        copper_zones.append(z)
+
+if not copper_zones:
+    print(json.dumps({{"status": "ok", "message": "No copper zones to fill", "zones_filled": 0}}))
+    raise SystemExit(0)
+
+# Unfill first to force recomputation
+for z in copper_zones:
+    z.UnFill()
+
+# Fill all zones (never pass aCheck=True headlessly — it hangs)
+filler = pcbnew.ZONE_FILLER(board)
+zones = board.Zones()
+success = filler.Fill(zones)
+
+# Collect results
+zone_info = []
+for z in copper_zones:
+    layer_set = z.GetLayerSet()
+    layer_name = "F.Cu" if layer_set.Contains(pcbnew.F_Cu) else "B.Cu" if layer_set.Contains(pcbnew.B_Cu) else "unknown"
+    zone_info.append({{
+        "net": z.GetNetname(),
+        "layer": layer_name,
+        "filled": z.IsFilled(),
+        "filled_area_mm2": round(pcbnew.ToMM(pcbnew.ToMM(z.GetFilledArea())), 1),
+    }})
+
+board.Save(board.GetFileName())
+
+print(json.dumps({{
+    "status": "ok",
+    "fill_success": success,
+    "zones_filled": len(copper_zones),
+    "zones": zone_info,
+}}))
+"""
+        return run_pcbnew_script(script, timeout=60.0)
+
+    # =========================================================================
+    # Silkscreen tools
+    # =========================================================================
+
+    @mcp.tool()
+    def list_silkscreen_items(pcb_path: str) -> Dict[str, Any]:
+        """List all silkscreen text items on the PCB.
+
+        Returns reference designators, values, and standalone text with their
+        positions, sizes, visibility, and layers.
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+
+items = []
+
+# Footprint text (references and values)
+for fp in board.GetFootprints():
+    ref = fp.GetReference()
+    for field_type, field_obj in [("reference", fp.Reference()), ("value", fp.Value())]:
+        pos = field_obj.GetPosition()
+        size = field_obj.GetTextSize()
+        rel_pos = field_obj.GetFPRelativePosition()
+        items.append({{
+            "type": field_type,
+            "component": ref,
+            "text": field_obj.GetText(),
+            "visible": field_obj.IsVisible(),
+            "layer": board.GetLayerName(field_obj.GetLayer()),
+            "x_mm": round(pcbnew.ToMM(pos.x), 3),
+            "y_mm": round(pcbnew.ToMM(pos.y), 3),
+            "rel_x_mm": round(pcbnew.ToMM(rel_pos.x), 3),
+            "rel_y_mm": round(pcbnew.ToMM(rel_pos.y), 3),
+            "size_mm": round(pcbnew.ToMM(size.x), 3),
+            "thickness_mm": round(pcbnew.ToMM(field_obj.GetTextThickness()), 3),
+            "angle_deg": field_obj.GetTextAngle().AsDegrees(),
+        }})
+
+# Standalone text items on silkscreen layers
+silk_layers = [board.GetLayerID("F.SilkS"), board.GetLayerID("B.SilkS")]
+for drawing in board.GetDrawings():
+    if hasattr(drawing, 'GetText') and drawing.GetLayer() in silk_layers:
+        pos = drawing.GetPosition()
+        size = drawing.GetTextSize()
+        items.append({{
+            "type": "standalone",
+            "component": None,
+            "text": drawing.GetText(),
+            "visible": drawing.IsVisible() if hasattr(drawing, 'IsVisible') else True,
+            "layer": board.GetLayerName(drawing.GetLayer()),
+            "x_mm": round(pcbnew.ToMM(pos.x), 3),
+            "y_mm": round(pcbnew.ToMM(pos.y), 3),
+            "rel_x_mm": 0,
+            "rel_y_mm": 0,
+            "size_mm": round(pcbnew.ToMM(size.x), 3),
+            "thickness_mm": round(pcbnew.ToMM(drawing.GetTextThickness()), 3),
+            "angle_deg": drawing.GetTextAngle().AsDegrees(),
+        }})
+
+print(json.dumps({{
+    "status": "ok",
+    "item_count": len(items),
+    "items": items,
+}}))
+"""
+        return run_pcbnew_script(script)
+
+    @mcp.tool()
+    def update_silkscreen_item(
+        pcb_path: str,
+        reference: str,
+        field: str = "reference",
+        visible: Optional[bool] = None,
+        x_mm: Optional[float] = None,
+        y_mm: Optional[float] = None,
+        rel_x_mm: Optional[float] = None,
+        rel_y_mm: Optional[float] = None,
+        size_mm: Optional[float] = None,
+        thickness_mm: Optional[float] = None,
+        angle_deg: Optional[float] = None,
+        layer: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Update a silkscreen text item's properties.
+
+        Modify visibility, position, size, rotation, or layer of a footprint's
+        reference designator or value text.
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+            reference: Component reference (e.g., "R1").
+            field: Which field to update - "reference" or "value" (default "reference").
+            visible: Set visibility (True/False). None to keep current.
+            x_mm: New absolute X position in mm. None to keep current.
+            y_mm: New absolute Y position in mm. None to keep current.
+            rel_x_mm: New X position relative to footprint center in mm. None to keep current.
+            rel_y_mm: New Y position relative to footprint center in mm. None to keep current.
+            size_mm: New text height in mm. None to keep current.
+            thickness_mm: New text stroke thickness in mm. None to keep current.
+            angle_deg: New text rotation in degrees. None to keep current.
+            layer: New layer name (e.g., "F.SilkS", "B.SilkS"). None to keep current.
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        if field not in ("reference", "value"):
+            return {"error": f"field must be 'reference' or 'value', got {field!r}"}
+
+        # Build the modification statements
+        mods = []
+        if visible is not None:
+            mods.append(f"text.SetVisible({visible!r})")
+        if x_mm is not None and y_mm is not None:
+            mods.append(f"text.SetPosition(pcbnew.VECTOR2I(pcbnew.FromMM({x_mm}), pcbnew.FromMM({y_mm})))")
+        elif x_mm is not None or y_mm is not None:
+            if x_mm is not None:
+                mods.append(f"pos = text.GetPosition(); text.SetPosition(pcbnew.VECTOR2I(pcbnew.FromMM({x_mm}), pos.y))")
+            else:
+                mods.append(f"pos = text.GetPosition(); text.SetPosition(pcbnew.VECTOR2I(pos.x, pcbnew.FromMM({y_mm})))")
+        if rel_x_mm is not None and rel_y_mm is not None:
+            mods.append(f"text.SetFPRelativePosition(pcbnew.VECTOR2I(pcbnew.FromMM({rel_x_mm}), pcbnew.FromMM({rel_y_mm})))")
+        if size_mm is not None:
+            mods.append(f"text.SetTextSize(pcbnew.VECTOR2I(pcbnew.FromMM({size_mm}), pcbnew.FromMM({size_mm})))")
+        if thickness_mm is not None:
+            mods.append(f"text.SetTextThickness(pcbnew.FromMM({thickness_mm}))")
+        if angle_deg is not None:
+            mods.append(f"text.SetTextAngle(pcbnew.EDA_ANGLE({angle_deg}, pcbnew.DEGREES_T))")
+        if layer is not None:
+            mods.append(f"text.SetLayer(board.GetLayerID({layer!r}))")
+
+        if not mods:
+            return {"error": "No modifications specified"}
+
+        mods_code = "\n".join(mods)
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+
+fp = board.FindFootprintByReference({reference!r})
+if fp is None:
+    print(json.dumps({{"error": f"Footprint {reference!r} not found"}}))
+    raise SystemExit(0)
+
+text = fp.Reference() if {field!r} == "reference" else fp.Value()
+
+{mods_code}
+
+board.Save(board.GetFileName())
+
+pos = text.GetPosition()
+size = text.GetTextSize()
+rel_pos = text.GetFPRelativePosition()
+print(json.dumps({{
+    "status": "ok",
+    "reference": {reference!r},
+    "field": {field!r},
+    "text": text.GetText(),
+    "visible": text.IsVisible(),
+    "layer": board.GetLayerName(text.GetLayer()),
+    "x_mm": round(pcbnew.ToMM(pos.x), 3),
+    "y_mm": round(pcbnew.ToMM(pos.y), 3),
+    "rel_x_mm": round(pcbnew.ToMM(rel_pos.x), 3),
+    "rel_y_mm": round(pcbnew.ToMM(rel_pos.y), 3),
+    "size_mm": round(pcbnew.ToMM(size.x), 3),
+    "thickness_mm": round(pcbnew.ToMM(text.GetTextThickness()), 3),
+    "angle_deg": text.GetTextAngle().AsDegrees(),
+}}))
+"""
+        return run_pcbnew_script(script)
+
+    @mcp.tool()
+    def check_silkscreen_overlaps(pcb_path: str) -> Dict[str, Any]:
+        """Find silkscreen text items that overlap copper pads.
+
+        Checks all visible silkscreen text (reference designators, values,
+        standalone text) against all pads on the board. Reports overlaps
+        between different components that could cause manufacturing issues.
+        Skips text overlapping its own component's pads (which is normal).
+
+        Args:
+            pcb_path: Path to the .kicad_pcb file.
+        """
+        if not os.path.exists(pcb_path):
+            return {"error": f"PCB file not found: {pcb_path}"}
+
+        script = f"""
+import pcbnew, json
+
+board = pcbnew.LoadBoard({pcb_path!r})
+
+silk_layer_ids = [board.GetLayerID("F.SilkS"), board.GetLayerID("B.SilkS")]
+
+# Collect all visible silkscreen text items with bounding boxes
+silk_items = []
+for fp in board.GetFootprints():
+    ref = fp.GetReference()
+    for field_type, field_obj in [("reference", fp.Reference()), ("value", fp.Value())]:
+        if not field_obj.IsVisible():
+            continue
+        if field_obj.GetLayer() not in silk_layer_ids:
+            continue
+        bbox = field_obj.GetBoundingBox()
+        silk_items.append({{
+            "type": field_type,
+            "component": ref,
+            "text": field_obj.GetText(),
+            "layer": board.GetLayerName(field_obj.GetLayer()),
+            "bbox_x_min": bbox.GetX(),
+            "bbox_y_min": bbox.GetY(),
+            "bbox_x_max": bbox.GetRight(),
+            "bbox_y_max": bbox.GetBottom(),
+        }})
+
+# Also check standalone text
+for drawing in board.GetDrawings():
+    if hasattr(drawing, 'GetText') and drawing.GetLayer() in silk_layer_ids:
+        if hasattr(drawing, 'IsVisible') and not drawing.IsVisible():
+            continue
+        bbox = drawing.GetBoundingBox()
+        silk_items.append({{
+            "type": "standalone",
+            "component": None,
+            "text": drawing.GetText(),
+            "layer": board.GetLayerName(drawing.GetLayer()),
+            "bbox_x_min": bbox.GetX(),
+            "bbox_y_min": bbox.GetY(),
+            "bbox_x_max": bbox.GetRight(),
+            "bbox_y_max": bbox.GetBottom(),
+        }})
+
+# Collect all pads
+pads = []
+for fp in board.GetFootprints():
+    for pad in fp.Pads():
+        sz = pad.GetBoundingBox()
+        pads.append({{
+            "reference": fp.GetReference(),
+            "pad_number": pad.GetNumber(),
+            "x_min": sz.GetX(),
+            "y_min": sz.GetY(),
+            "x_max": sz.GetRight(),
+            "y_max": sz.GetBottom(),
+        }})
+
+# Check for AABB overlaps (skip text overlapping own component)
+overlaps = []
+for si in silk_items:
+    for pad in pads:
+        if si["component"] == pad["reference"]:
+            continue
+        if (si["bbox_x_min"] < pad["x_max"] and si["bbox_x_max"] > pad["x_min"] and
+            si["bbox_y_min"] < pad["y_max"] and si["bbox_y_max"] > pad["y_min"]):
+            overlaps.append({{
+                "silk_type": si["type"],
+                "silk_component": si["component"],
+                "silk_text": si["text"],
+                "silk_layer": si["layer"],
+                "pad_component": pad["reference"],
+                "pad_number": pad["pad_number"],
+            }})
+
+print(json.dumps({{
+    "status": "ok",
+    "silk_items_checked": len(silk_items),
+    "pads_checked": len(pads),
+    "overlap_count": len(overlaps),
+    "overlaps": overlaps,
+}}))
+"""
+        return run_pcbnew_script(script)
