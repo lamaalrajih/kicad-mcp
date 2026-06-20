@@ -1,0 +1,17 @@
+ERC report (2026-03-11T22:14:45+0500, Encoding UTF8)
+
+***** Sheet /
+[pin_not_connected]: Pin not connected
+    ; error
+    @(50.00 mm, 50.00 mm): Symbol #PWR01 Hidden pin 1 [+3V3, Power input, Line]
+[power_pin_not_driven]: Input Power pin not driven by any Output Power pins
+    ; error
+    @(50.00 mm, 50.00 mm): Symbol #PWR01 Hidden pin 1 [+3V3, Power input, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(50.00 mm, 50.00 mm): Symbol #PWR01 Hidden pin 1 [+3V3, Power input, Line]
+[lib_symbol_mismatch]: Symbol '+3V3' doesn't match copy in library 'power'
+    ; warning
+    @(50.00 mm, 50.00 mm): Symbol #PWR01 [+3V3]
+
+ ** ERC messages: 4  Errors 2  Warnings 2

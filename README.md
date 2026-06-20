@@ -6,6 +6,7 @@ This guide will help you set up a Model Context Protocol (MCP) server for KiCad.
 
 - [Prerequisites](#prerequisites)
 - [Installation Steps](#installation-steps)
+- [Running the Servers](#running-the-servers)
 - [Understanding MCP Components](#understanding-mcp-components)
 - [Feature Highlights](#feature-highlights)
 - [Natural Language Interaction](#natural-language-interaction)
@@ -105,6 +106,67 @@ Replace `/ABSOLUTE/PATH/TO/YOUR/PROJECT/kicad-mcp` with the actual path to your 
 ### 5. Restart Your MCP Client
 
 Close and reopen your MCP client to load the new configuration.
+
+## Running the Servers
+
+This package is the **Headless MCP Server**. An optional companion, the **GUI MCP Server**, lives in a separate project (`kicad-gui-mcp`) and drives a *live* KiCad instance. You can run one or both — most setups benefit from having both configured in the same MCP client.
+
+### Headless MCP Server
+
+This server (the one in this repository) talks to KiCad through `kicad-cli` only. **It does not require the KiCad GUI to be running**, which makes it ideal for batch analysis, DRC/ERC, netlist extraction, BOM export, and thumbnail generation.
+
+```bash
+python main.py
+```
+
+> Equivalent: `make run` (which runs `uv run python main.py` using the project's `.venv/`).
+> If you run `python` directly, activate the environment first: `source .venv/bin/activate`.
+
+Once configured in your MCP client (see [Installation Steps](#installation-steps)), the headless server provides analysis and export tools. It does not perform live editing.
+
+### GUI MCP Server
+
+The GUI MCP Server is a separate companion project — **`kicad-gui-mcp`** — typically a sibling of this repository. It connects to a *running* KiCad instance through the IPC API (`kipy`) and adds live PCB editing (move/rotate/flip footprints, manage tracks and zones) plus board inspection that reflects the current GUI state.
+
+**Prerequisites:**
+
+1. Set up the companion project (obtain the `kicad-gui-mcp` sources, then from its directory):
+   ```bash
+   cd kicad-gui-mcp
+   make install      # creates .venv/ and installs kicad-python + fastmcp
+   ```
+
+2. Start KiCad and enable the API server:
+   - Open the KiCad GUI and load a board or schematic.
+   - Enable **Preferences → Plugins → Allow API server**.
+   - Verify the IPC socket exists:
+     ```bash
+     ls /tmp/kicad/api.sock    # must be present
+     ```
+     (If your socket lives elsewhere, set the `KICAD_API_SOCKET` environment variable before starting the server.)
+
+3. Start the server from the `kicad-gui-mcp` directory:
+   ```bash
+   python main.py        # or: make run
+   ```
+
+4. Register it in your MCP client alongside the headless server:
+   ```json
+   {
+       "mcpServers": {
+           "kicad": {
+               "command": "/ABSOLUTE/PATH/TO/kicad-mcp/.venv/bin/python",
+               "args": ["/ABSOLUTE/PATH/TO/kicad-mcp/main.py"]
+           },
+           "kicad-gui": {
+               "command": "/ABSOLUTE/PATH/TO/kicad-gui-mcp/.venv/bin/python",
+               "args": ["/ABSOLUTE/PATH/TO/kicad-gui-mcp/main.py"]
+           }
+       }
+   }
+   ```
+
+> **Note:** The GUI server's live tools only function while KiCad is open with the API server enabled. Its export/DRC/ERC tools (which use `kicad-cli`) also work without the GUI, just like the headless server.
 
 ## Understanding MCP Components
 
