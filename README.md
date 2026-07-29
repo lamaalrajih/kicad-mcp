@@ -159,6 +159,10 @@ The KiCad MCP Server provides several key features, each with detailed documenta
 - **Circuit Pattern Recognition**: Automatically identify common circuit patterns in your schematics
   - *Example:* "What power supply topologies am I using in my IoT device?" → Identifies buck, boost, or linear regulators
 
+- **Parts Registry**: Search an open, no-login registry of 21,000+ verified KiCad parts and download footprints/symbols/3D models into your project
+  - *Example:* "Find a USB-C 16-pin connector and add its footprint to my project library" → Searches the registry and saves the `.kicad_mod`/`.kicad_sym` files locally
+  - Uses [PartReel](https://partreel.com) by default; point `PARTS_REGISTRY_URL` at any registry with the same JSON shape. Downloads are host-allowlisted, extension-checked and size-capped.
+
 For more examples and details on each feature, see the dedicated guides in the documentation. You can also ask the LLM what tools it has access to!
 
 ## Natural Language Interaction
