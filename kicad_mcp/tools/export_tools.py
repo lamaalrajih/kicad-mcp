@@ -12,6 +12,78 @@ from mcp.server.fastmcp import FastMCP, Context, Image
 from kicad_mcp.utils.file_utils import get_project_files
 from kicad_mcp.config import KICAD_APP_PATH, system
 
+async def _generate_pcb_thumbnail_impl(project_path: str, ctx: Context | None):
+    """Shared implementation for PCB thumbnail generation via kicad-cli.
+
+    Kept outside the ``@mcp.tool()`` wrappers so other tools can call it
+    directly; a decorated tool becomes a ``FunctionTool`` object and is no
+    longer callable as a plain coroutine function.
+    """
+    try:
+        # Access the context (with null check)
+        app_context = None
+        if ctx:
+            app_context = ctx.request_context.lifespan_context
+        # Removed check for kicad_modules_available as we now use CLI
+        
+        print(f"Generating thumbnail via CLI for project: {project_path}")
+
+        if not os.path.exists(project_path):
+            print(f"Project not found: {project_path}")
+            if ctx:
+                await ctx.info(f"Project not found: {project_path}")
+            return None
+
+        # Get PCB file from project
+        files = get_project_files(project_path)
+        if "pcb" not in files:
+            print("PCB file not found in project")
+            if ctx:
+                await ctx.info("PCB file not found in project")
+            return None
+
+        pcb_file = files["pcb"]
+        print(f"Found PCB file: {pcb_file}")
+
+        # Check cache
+        cache_key = f"thumbnail_cli_{pcb_file}_{os.path.getmtime(pcb_file)}"
+        if app_context and hasattr(app_context, 'cache') and cache_key in app_context.cache:
+            print(f"Using cached CLI thumbnail for {pcb_file}")
+            return app_context.cache[cache_key]
+
+        if ctx:
+            await ctx.report_progress(10, 100)
+            await ctx.info(f"Generating thumbnail for {os.path.basename(pcb_file)} using kicad-cli")
+
+        # Use command-line tools
+        try:
+            thumbnail = await generate_thumbnail_with_cli(pcb_file, ctx)
+            if thumbnail:
+                # Cache the result if possible
+                if app_context and hasattr(app_context, 'cache'):
+                    app_context.cache[cache_key] = thumbnail
+                print("Thumbnail generated successfully via CLI.")
+                return thumbnail
+            else:
+                 print("generate_thumbnail_with_cli returned None")
+                 if ctx:
+                     await ctx.info("Failed to generate thumbnail using kicad-cli.")
+                 return None
+        except Exception as e:
+            print(f"Error calling generate_thumbnail_with_cli: {str(e)}", exc_info=True)
+            if ctx:
+                await ctx.info(f"Error generating thumbnail with kicad-cli: {str(e)}")
+            return None
+        
+    except asyncio.CancelledError:
+        print("Thumbnail generation cancelled")
+        raise  # Re-raise to let MCP know the task was cancelled
+    except Exception as e:
+        print(f"Unexpected error in thumbnail generation: {str(e)}")
+        if ctx:
+            await ctx.info(f"Error: {str(e)}")
+        return None
+
 def register_export_tools(mcp: FastMCP) -> None:
     """Register export tools with the MCP server.
     
@@ -30,77 +102,14 @@ def register_export_tools(mcp: FastMCP) -> None:
         Returns:
             Thumbnail image of the PCB or None if generation failed
         """
-        try:
-            # Access the context (with null check)
-            app_context = None
-            if ctx:
-                app_context = ctx.request_context.lifespan_context
-            # Removed check for kicad_modules_available as we now use CLI
-            
-            print(f"Generating thumbnail via CLI for project: {project_path}")
-
-            if not os.path.exists(project_path):
-                print(f"Project not found: {project_path}")
-                if ctx:
-                    await ctx.info(f"Project not found: {project_path}")
-                return None
-
-            # Get PCB file from project
-            files = get_project_files(project_path)
-            if "pcb" not in files:
-                print("PCB file not found in project")
-                if ctx:
-                    await ctx.info("PCB file not found in project")
-                return None
-
-            pcb_file = files["pcb"]
-            print(f"Found PCB file: {pcb_file}")
-
-            # Check cache
-            cache_key = f"thumbnail_cli_{pcb_file}_{os.path.getmtime(pcb_file)}"
-            if app_context and hasattr(app_context, 'cache') and cache_key in app_context.cache:
-                print(f"Using cached CLI thumbnail for {pcb_file}")
-                return app_context.cache[cache_key]
-
-            if ctx:
-                await ctx.report_progress(10, 100)
-                await ctx.info(f"Generating thumbnail for {os.path.basename(pcb_file)} using kicad-cli")
-
-            # Use command-line tools
-            try:
-                thumbnail = await generate_thumbnail_with_cli(pcb_file, ctx)
-                if thumbnail:
-                    # Cache the result if possible
-                    if app_context and hasattr(app_context, 'cache'):
-                        app_context.cache[cache_key] = thumbnail
-                    print("Thumbnail generated successfully via CLI.")
-                    return thumbnail
-                else:
-                     print("generate_thumbnail_with_cli returned None")
-                     if ctx:
-                         await ctx.info("Failed to generate thumbnail using kicad-cli.")
-                     return None
-            except Exception as e:
-                print(f"Error calling generate_thumbnail_with_cli: {str(e)}", exc_info=True)
-                if ctx:
-                    await ctx.info(f"Error generating thumbnail with kicad-cli: {str(e)}")
-                return None
-            
-        except asyncio.CancelledError:
-            print("Thumbnail generation cancelled")
-            raise  # Re-raise to let MCP know the task was cancelled
-        except Exception as e:
-            print(f"Unexpected error in thumbnail generation: {str(e)}")
-            if ctx:
-                await ctx.info(f"Error: {str(e)}")
-            return None
+        return await _generate_pcb_thumbnail_impl(project_path, ctx)
 
     @mcp.tool()
     async def generate_project_thumbnail(project_path: str, ctx: Context | None):
         """Generate a thumbnail of a KiCad project's PCB layout (Alias for generate_pcb_thumbnail)."""
         # This function now just calls the main CLI-based thumbnail generator
         print(f"generate_project_thumbnail called, redirecting to generate_pcb_thumbnail for {project_path}")
-        return await generate_pcb_thumbnail(project_path, ctx)
+        return await _generate_pcb_thumbnail_impl(project_path, ctx)
 
 # Helper functions for thumbnail generation
 async def generate_thumbnail_with_cli(pcb_file: str, ctx: Context | None):
