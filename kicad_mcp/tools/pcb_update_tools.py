@@ -82,6 +82,27 @@ def register_pcb_update_tools(mcp: FastMCP) -> None:
             return {"success": False, "error": str(e)}
 
     @mcp.tool()
+    async def add_pcb_outline(project_path: str, x: float, y: float,
+                              width: float, height: float,
+                              ctx: Context = None) -> Dict[str, Any]:
+        """Add a rectangular board outline (Edge.Cuts) to the project's board.
+
+        A board outline is required before autorouting. Do not run while the
+        board is open in the PCB Editor.
+
+        Args:
+            project_path: Path to the .kicad_pro file.
+            x, y: Top-left corner in mm.
+            width, height: Outline size in mm.
+        """
+        try:
+            files = _project_files(project_path)
+            return pr.add_outline(files["pcb"], float(x), float(y),
+                                  float(width), float(height))
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    @mcp.tool()
     async def autoroute_pcb(project_path: str, passes: int = 100,
                             ctx: Context = None) -> Dict[str, Any]:
         """Autoroute the board with Freerouting (export DSN -> route -> import SES).
@@ -121,10 +142,21 @@ def register_pcb_update_tools(mcp: FastMCP) -> None:
 
                 if ctx:
                     ctx.info(f"Running Freerouting ({passes} passes)...")
-                # Support both the classic (-de/-do) and newer CLI flags.
-                cmd = [java, "-jar", jar, "-de", dsn, "-do", ses,
+                # Force headless, and neutralize Freerouting's startup/finish
+                # telemetry. It POSTs analytics on a code path that BLOCKS the
+                # job: a real but unreachable proxy makes it hang, and no proxy
+                # makes the direct connect hang too. Pointing the proxy at a
+                # closed local port makes that connect fail *instantly*
+                # (ECONNREFUSED) so routing proceeds and the process exits.
+                cmd = [java,
+                       "-Djava.awt.headless=true",
+                       "-jar", jar, "-de", dsn, "-do", ses,
                        "-mp", str(passes)]
-                rp = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+                env = dict(os.environ)
+                env["HTTP_PROXY"] = env["HTTPS_PROXY"] = "http://127.0.0.1:9"
+                env["http_proxy"] = env["https_proxy"] = "http://127.0.0.1:9"
+                rp = subprocess.run(cmd, capture_output=True, text=True,
+                                    timeout=1800, env=env)
                 if not os.path.exists(ses):
                     return {"success": False, "stage": "freerouting",
                             "error": rp.stderr.strip()[-500:] or rp.stdout.strip()[-500:]}

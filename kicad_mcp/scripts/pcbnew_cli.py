@@ -137,6 +137,22 @@ def cmd_update_from_netlist(args):
     })
 
 
+def cmd_add_outline(args):
+    board = pcbnew.LoadBoard(args.board)
+    rect = pcbnew.PCB_SHAPE(board)
+    rect.SetShape(pcbnew.SHAPE_T_RECT)
+    rect.SetStart(pcbnew.VECTOR2I(pcbnew.FromMM(args.x), pcbnew.FromMM(args.y)))
+    rect.SetEnd(pcbnew.VECTOR2I(pcbnew.FromMM(args.x + args.width),
+                                pcbnew.FromMM(args.y + args.height)))
+    rect.SetLayer(pcbnew.Edge_Cuts)
+    rect.SetWidth(pcbnew.FromMM(0.1))
+    board.Add(rect)
+    pcbnew.SaveBoard(args.board, board)
+    _out({"success": True, "board": args.board,
+          "outline_mm": {"x": args.x, "y": args.y,
+                         "w": args.width, "h": args.height}})
+
+
 def cmd_export_dsn(args):
     board = pcbnew.LoadBoard(args.board)
     ok = pcbnew.ExportSpecctraDSN(board, args.output)
@@ -161,6 +177,14 @@ def main():
     u.add_argument("--input", required=True)
     u.add_argument("--footprint-dir", action="append")
     u.set_defaults(func=cmd_update_from_netlist)
+
+    o = sub.add_parser("add-outline")
+    o.add_argument("--board", required=True)
+    o.add_argument("--x", type=float, required=True)
+    o.add_argument("--y", type=float, required=True)
+    o.add_argument("--width", type=float, required=True)
+    o.add_argument("--height", type=float, required=True)
+    o.set_defaults(func=cmd_add_outline)
 
     e = sub.add_parser("export-dsn")
     e.add_argument("--board", required=True)

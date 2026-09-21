@@ -137,6 +137,14 @@ def update_pcb_from_netlist(board_path: str, netlist_json: Dict[str, Any],
         os.unlink(json_path)
 
 
+def add_outline(board_path: str, x: float, y: float,
+                width: float, height: float) -> Dict[str, Any]:
+    return _run_backend("add-outline", [
+        "--board", board_path, "--x", str(x), "--y", str(y),
+        "--width", str(width), "--height", str(height),
+    ])
+
+
 def export_dsn(board_path: str, dsn_path: str) -> Dict[str, Any]:
     return _run_backend("export-dsn", ["--board", board_path, "--output", dsn_path])
 
