@@ -3,7 +3,8 @@ Analysis and validation tools for KiCad projects.
 """
 import os
 from typing import Dict, Any, Optional
-from mcp.server.fastmcp import FastMCP, Context, Image
+from fastmcp import FastMCP, Context
+from fastmcp.utilities.types import Image
 
 from kicad_mcp.utils.file_utils import get_project_files
 

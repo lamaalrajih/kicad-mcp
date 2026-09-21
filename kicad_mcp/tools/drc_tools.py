@@ -4,7 +4,7 @@ Design Rule Check (DRC) tools for KiCad PCB files.
 import os
 # import logging # <-- Remove if no other logging exists
 from typing import Dict, Any
-from mcp.server.fastmcp import FastMCP, Context
+from fastmcp import FastMCP, Context
 
 from kicad_mcp.utils.file_utils import get_project_files
 from kicad_mcp.utils.drc_history import save_drc_result, get_drc_history, compare_with_previous
@@ -63,7 +63,7 @@ def register_drc_tools(mcp: FastMCP) -> None:
         }
     
     @mcp.tool()
-    async def run_drc_check(project_path: str, ctx: Context | None) -> Dict[str, Any]:
+    async def run_drc_check(project_path: str, ctx: Context) -> Dict[str, Any]:
         """Run a Design Rule Check on a KiCad PCB file.
         
         Args:

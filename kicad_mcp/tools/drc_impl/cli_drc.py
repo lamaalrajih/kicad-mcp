@@ -6,11 +6,11 @@ import json
 import subprocess
 import tempfile
 from typing import Dict, Any, Optional
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 
 from kicad_mcp.config import system
 
-async def run_drc_via_cli(pcb_file: str, ctx: Context | None) -> Dict[str, Any]:
+async def run_drc_via_cli(pcb_file: str, ctx: Context) -> Dict[str, Any]:
     """Run DRC using KiCad command line tools.
     
     Args:
