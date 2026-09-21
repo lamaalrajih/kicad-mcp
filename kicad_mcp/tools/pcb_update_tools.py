@@ -142,21 +142,33 @@ def register_pcb_update_tools(mcp: FastMCP) -> None:
 
                 if ctx:
                     ctx.info(f"Running Freerouting ({passes} passes)...")
-                # Force headless, and neutralize Freerouting's startup/finish
-                # telemetry. It POSTs analytics on a code path that BLOCKS the
-                # job: a real but unreachable proxy makes it hang, and no proxy
-                # makes the direct connect hang too. Pointing the proxy at a
-                # closed local port makes that connect fail *instantly*
-                # (ECONNREFUSED) so routing proceeds and the process exits.
-                cmd = [java,
-                       "-Djava.awt.headless=true",
-                       "-jar", jar, "-de", dsn, "-do", ses,
+                # Notes learned the hard way:
+                # * Run in GUI mode (do NOT set -Djava.awt.headless=true).
+                #   Freerouting needs a display context to route; true headless
+                #   hangs at 0% CPU during board init. A Freerouting window will
+                #   briefly appear.
+                # * Neutralize its telemetry: it POSTs analytics on a path that
+                #   blocks the job. A real-but-unreachable proxy hangs, and a
+                #   direct connect hangs too; pointing the proxy at a closed
+                #   local port makes that connect fail instantly (ECONNREFUSED)
+                #   so routing proceeds and the process exits.
+                # * Freerouting 2.x is a poor offline CLI router (fixed per-pass
+                #   time budgets, fails to route); use 1.9.0.
+                cmd = [java, "-jar", jar, "-de", dsn, "-do", ses,
                        "-mp", str(passes)]
                 env = dict(os.environ)
                 env["HTTP_PROXY"] = env["HTTPS_PROXY"] = "http://127.0.0.1:9"
                 env["http_proxy"] = env["https_proxy"] = "http://127.0.0.1:9"
                 rp = subprocess.run(cmd, capture_output=True, text=True,
                                     timeout=1800, env=env)
+                # Freerouting writes an (almost) empty SES even when it routes
+                # nothing; surface that instead of claiming success.
+                wires = 0
+                if os.path.exists(ses):
+                    try:
+                        wires = open(ses).read().count("(wire")
+                    except OSError:
+                        pass
                 if not os.path.exists(ses):
                     return {"success": False, "stage": "freerouting",
                             "error": rp.stderr.strip()[-500:] or rp.stdout.strip()[-500:]}
@@ -167,7 +179,7 @@ def register_pcb_update_tools(mcp: FastMCP) -> None:
                 if not s.get("success"):
                     return {"success": False, "stage": "import_ses", "detail": s}
 
-            return {"success": True, "board": board, "routed": True,
-                    "freerouting_jar": jar}
+            return {"success": True, "board": board, "routed": wires > 0,
+                    "wires_routed": wires, "freerouting_jar": jar}
         except Exception as e:
             return {"success": False, "error": str(e)}
