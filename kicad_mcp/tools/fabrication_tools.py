@@ -15,8 +15,85 @@ from kicad_mcp.utils.file_utils import get_project_files
 from kicad_mcp.utils.kicad_cli import get_cli_manager
 
 
+def _resolve_pcb(project_path: str) -> str:
+    if project_path.endswith(".kicad_pcb"):
+        return project_path
+    files = get_project_files(project_path)
+    if "pcb" not in files:
+        raise FileNotFoundError("Project has no board (.kicad_pcb)")
+    return files["pcb"]
+
+
 def register_fabrication_tools(mcp: FastMCP) -> None:
     """Register fabrication output tools with the MCP server."""
+
+    @mcp.tool()
+    async def export_position_file(project_path: str, output_path: str = "",
+                                   side: str = "both", fmt: str = "csv",
+                                   units: str = "mm",
+                                   ctx: Context = None) -> Dict[str, Any]:
+        """Export a component placement (pick-and-place / centroid) file.
+
+        Args:
+            project_path: Path to the .kicad_pro (or .kicad_pcb) file.
+            output_path: Output file; defaults to ``<board>-pos.<ext>`` next to
+                the board.
+            side: ``front``, ``back`` or ``both`` (default both).
+            fmt: ``csv`` or ``ascii`` (default csv).
+            units: ``mm`` or ``in`` (default mm).
+        """
+        try:
+            cli = get_cli_manager().find_kicad_cli()
+            if not cli:
+                return {"success": False, "error": "kicad-cli not found"}
+            pcb = _resolve_pcb(project_path)
+            base = os.path.splitext(pcb)[0]
+            ext = "csv" if fmt == "csv" else "pos"
+            out = output_path or f"{base}-pos.{ext}"
+            if ctx:
+                ctx.info(f"Exporting placement file ({side}, {fmt}) -> {out}")
+            p = subprocess.run(
+                [cli, "pcb", "export", "pos", "--output", out,
+                 "--side", side, "--format", fmt, "--units", units, pcb],
+                capture_output=True, text=True, timeout=120,
+            )
+            if not os.path.exists(out):
+                return {"success": False,
+                        "error": (p.stderr or p.stdout).strip()[-400:]}
+            return {"success": True, "board": pcb, "position_file": out,
+                    "side": side, "format": fmt, "units": units}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    @mcp.tool()
+    async def export_step(project_path: str, output_path: str = "",
+                          ctx: Context = None) -> Dict[str, Any]:
+        """Export a 3D STEP model of the board (with component 3D models).
+
+        Args:
+            project_path: Path to the .kicad_pro (or .kicad_pcb) file.
+            output_path: Output ``.step`` file; defaults to ``<board>.step``.
+        """
+        try:
+            cli = get_cli_manager().find_kicad_cli()
+            if not cli:
+                return {"success": False, "error": "kicad-cli not found"}
+            pcb = _resolve_pcb(project_path)
+            out = output_path or f"{os.path.splitext(pcb)[0]}.step"
+            if ctx:
+                ctx.info(f"Exporting 3D STEP -> {out}")
+            p = subprocess.run(
+                [cli, "pcb", "export", "step", "--force",
+                 "--subst-models", "--no-dnp", "--output", out, pcb],
+                capture_output=True, text=True, timeout=300,
+            )
+            if not os.path.exists(out):
+                return {"success": False,
+                        "error": (p.stderr or p.stdout).strip()[-400:]}
+            return {"success": True, "board": pcb, "step_file": out,
+                    "size_bytes": os.path.getsize(out)}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     @mcp.tool()
     async def export_gerbers(project_path: str, output_dir: str = "",

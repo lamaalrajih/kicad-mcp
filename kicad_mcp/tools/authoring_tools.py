@@ -12,8 +12,11 @@ from typing import Dict, Any
 
 from fastmcp import FastMCP, Context
 
+from typing import Optional
+
 from kicad_mcp.utils.file_utils import get_project_files
 from kicad_mcp.utils import sexpr_author as author
+from kicad_mcp.utils import circuit_templates
 
 
 def _resolve_schematic(project_path: str) -> str:
@@ -114,6 +117,39 @@ def register_authoring_tools(mcp: FastMCP) -> None:
             return comp
         except author.SymbolNotFound as e:
             return {"success": False, "error": f"Symbol not found: {e}"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    @mcp.tool()
+    async def list_circuit_templates(ctx: Context = None) -> Dict[str, Any]:
+        """List the built-in common-circuit templates and their parameters."""
+        return {"success": True, "templates": circuit_templates.TEMPLATE_HELP}
+
+    @mcp.tool()
+    async def apply_circuit_template(project_path: str, template: str,
+                                     params: Optional[Dict[str, Any]] = None,
+                                     ctx: Context = None) -> Dict[str, Any]:
+        """Add a common circuit (by template name) to a project's schematic.
+
+        Use ``list_circuit_templates`` to see available templates. Components
+        are wired via net labels. Follow with ``update_pcb_from_schematic`` to
+        push them onto the board.
+
+        Args:
+            project_path: Path to the .kicad_pro (or .kicad_sch) file.
+            template: One of ``voltage_divider``, ``rc_lowpass``,
+                ``led_indicator``, ``decoupling``.
+            params: Optional per-template overrides (e.g. ``{"r1": "4.7k"}``).
+        """
+        try:
+            sch = _resolve_schematic(project_path)
+            if ctx:
+                ctx.info(f"Applying template '{template}'")
+            summary = circuit_templates.apply_template(sch, template, params or {})
+            summary["success"] = True
+            return summary
+        except ValueError as e:
+            return {"success": False, "error": str(e)}
         except Exception as e:
             return {"success": False, "error": str(e)}
 
