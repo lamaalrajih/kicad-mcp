@@ -29,6 +29,8 @@ from kicad_mcp.tools.pattern_tools import register_pattern_tools
 from kicad_mcp.tools.authoring_tools import register_authoring_tools
 from kicad_mcp.tools.pcb_live_tools import register_pcb_live_tools
 from kicad_mcp.tools.pcb_update_tools import register_pcb_update_tools
+from kicad_mcp.tools.fabrication_tools import register_fabrication_tools
+from kicad_mcp.tools.library_tools import register_library_tools
 
 # Import prompt handlers
 from kicad_mcp.prompts.templates import register_prompts
@@ -159,6 +161,8 @@ def create_server() -> FastMCP:
     register_authoring_tools(mcp)
     register_pcb_live_tools(mcp)
     register_pcb_update_tools(mcp)
+    register_fabrication_tools(mcp)
+    register_library_tools(mcp)
     
     # Register prompts
     logging.info(f"Registering prompts...")

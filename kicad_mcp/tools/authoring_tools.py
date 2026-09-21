@@ -35,7 +35,8 @@ def register_authoring_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def create_project(project_dir: str, name: str,
-                             with_pcb: bool = True, ctx: Context = None) -> Dict[str, Any]:
+                             with_pcb: bool = True, copper_layers: int = 2,
+                             ctx: Context = None) -> Dict[str, Any]:
         """Create a new, empty KiCad project.
 
         Creates ``<name>.kicad_pro``, ``<name>.kicad_sch`` and (optionally)
@@ -45,6 +46,9 @@ def register_authoring_tools(mcp: FastMCP) -> None:
             project_dir: Directory to create the project in (created if missing)
             name: Base name for the project files (no extension)
             with_pcb: Also create an empty board file (default True)
+            copper_layers: Number of copper layers, an even number 2..32
+                (default 2). Values > 2 create a multilayer board (needs
+                KiCad's bundled pcbnew).
 
         Returns:
             Dictionary describing the created files.
@@ -53,6 +57,15 @@ def register_authoring_tools(mcp: FastMCP) -> None:
             if ctx:
                 ctx.info(f"Creating project '{name}' in {project_dir}")
             result = author.create_project(project_dir, name, with_pcb=with_pcb)
+            if with_pcb and copper_layers and copper_layers != 2:
+                if copper_layers < 2 or copper_layers > 32 or copper_layers % 2:
+                    return {"success": False,
+                            "error": "copper_layers must be an even number 2..32"}
+                from kicad_mcp.utils import pcbnew_runner as pr
+                layer_res = pr.set_copper_layers(result["pcb_file"], copper_layers)
+                result["copper_layers"] = layer_res.get("copper_layers")
+            else:
+                result["copper_layers"] = 2
             result["success"] = True
             return result
         except Exception as e:

@@ -153,6 +153,14 @@ def cmd_add_outline(args):
                          "w": args.width, "h": args.height}})
 
 
+def cmd_set_copper_layers(args):
+    board = pcbnew.LoadBoard(args.board)
+    board.SetCopperLayerCount(int(args.count))
+    pcbnew.SaveBoard(args.board, board)
+    _out({"success": True, "board": args.board,
+          "copper_layers": board.GetCopperLayerCount()})
+
+
 def cmd_export_dsn(args):
     board = pcbnew.LoadBoard(args.board)
     ok = pcbnew.ExportSpecctraDSN(board, args.output)
@@ -185,6 +193,11 @@ def main():
     o.add_argument("--width", type=float, required=True)
     o.add_argument("--height", type=float, required=True)
     o.set_defaults(func=cmd_add_outline)
+
+    cl = sub.add_parser("set-copper-layers")
+    cl.add_argument("--board", required=True)
+    cl.add_argument("--count", type=int, required=True)
+    cl.set_defaults(func=cmd_set_copper_layers)
 
     e = sub.add_parser("export-dsn")
     e.add_argument("--board", required=True)

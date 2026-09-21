@@ -145,6 +145,11 @@ def add_outline(board_path: str, x: float, y: float,
     ])
 
 
+def set_copper_layers(board_path: str, count: int) -> Dict[str, Any]:
+    return _run_backend("set-copper-layers",
+                        ["--board", board_path, "--count", str(count)])
+
+
 def export_dsn(board_path: str, dsn_path: str) -> Dict[str, Any]:
     return _run_backend("export-dsn", ["--board", board_path, "--output", dsn_path])
 
